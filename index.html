@@ -2,32 +2,62 @@
 <html>
 <head>
   <title>Leg Lift Test</title>
-
   <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-
   <!-- Add Firestore -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-
 </head>
 <body>
 
-  <!-- Form for capturing leg lift test data -->
+  <!-- Updated Form -->
   <form id="testForm">
     <input type="date" id="testDate" name="testDate" required>
     <input type="text" id="roomNumber" name="roomNumber" placeholder="Room Number" required>
-    <input type="number" id="legLiftingScore" name="legLiftingScore" placeholder="Leg Lifting Score" required>
+
+    <!-- Leg strength options for Left Leg -->
+    <fieldset>
+      <legend>Left Leg Strength</legend>
+      <label>
+        <input type="radio" name="leftLeg" value="3"> Raises against resistance and can sustain
+      </label>
+      <label>
+        <input type="radio" name="leftLeg" value="2"> Can raise leg off bed but gives immediately with resistance
+      </label>
+      <label>
+        <input type="radio" name="leftLeg" value="1"> Cannot get heel off bed but bends knee
+      </label>
+      <label>
+        <input type="radio" name="leftLeg" value="0"> Cannot bend knee or get heel off bed
+      </label>
+    </fieldset>
+
+    <!-- Leg strength options for Right Leg -->
+    <fieldset>
+      <legend>Right Leg Strength</legend>
+      <label>
+        <input type="radio" name="rightLeg" value="3"> Raises against resistance and can sustain
+      </label>
+      <label>
+        <input type="radio" name="rightLeg" value="2"> Can raise leg off bed but gives immediately with resistance
+      </label>
+      <label>
+        <input type="radio" name="rightLeg" value="1"> Cannot get heel off bed but bends knee
+      </label>
+      <label>
+        <input type="radio" name="rightLeg" value="0"> Cannot bend knee or get heel off bed
+      </label>
+    </fieldset>
+
     <label for="outcome">Can walk next day</label>
     <input type="checkbox" id="outcome" name="outcome">
+    
     <input type="submit" value="Submit">
   </form>
 
-  <!-- Add a div to display data -->
+  <!-- Display Data -->
   <div id="dataDisplay">
     <h2>Stored Data</h2>
-    <ul id="dataList">
-      <!-- Data will be appended here -->
-    </ul>
+    <ul id="dataList"></ul>
   </div>
 
   <script>
@@ -45,7 +75,7 @@
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    
+
     // Event listener for form submissions
     document.getElementById('testForm').addEventListener('submit', function(e) {
       e.preventDefault();
@@ -53,16 +83,21 @@
       // Capture form data
       const testDate = document.getElementById('testDate').value;
       const roomNumber = document.getElementById('roomNumber').value;
-      const legLiftingScore = document.getElementById('legLiftingScore').value;
+      const leftLegScore = document.querySelector('input[name="leftLeg"]:checked').value;
+      const rightLegScore = document.querySelector('input[name="rightLeg"]:checked').value;
+      const totalLegScore = parseInt(leftLegScore) + parseInt(rightLegScore);
       const outcome = document.getElementById('outcome').checked;
 
       // Submit to Firestore
       db.collection('tests').add({
         date: testDate,
         room: roomNumber,
-        legLiftingScore: parseInt(legLiftingScore),
+        leftLegScore: parseInt(leftLegScore),
+        rightLegScore: parseInt(rightLegScore),
+        totalLegScore: totalLegScore,
         outcome: outcome
-      }).then((docRef) => {
+      })
+      .then((docRef) => {
         console.log("Document written with ID: ", docRef.id);
       })
       .catch((error) => {
@@ -73,32 +108,16 @@
     // Function to display data
     function displayData(doc) {
       let li = document.createElement('li');
-      li.textContent = `Date: ${doc.data().date}, Room: ${doc.data().room}, Score: ${doc.data().legLiftingScore}, Outcome: ${doc.data().outcome}`;
+      li.textContent = `Date: ${doc.data().date}, Room: ${doc.data().room}, Left Leg Score: ${doc.data().leftLegScore}, Right Leg Score: ${doc.data().rightLegScore}, Total Score: ${doc.data().totalLegScore}, Outcome: ${doc.data().outcome}`;
       document.getElementById('dataList').appendChild(li);
     }
 
-
-
-      // Function to display data
-  function displayData(doc) {
-    console.log("Displaying data:", doc.data());
-    let li = document.createElement('li');
-    li.textContent = `Date: ${doc.data().date}, Room: ${doc.data().room}, Score: ${doc.data().legLiftingScore}, Outcome: ${doc.data().outcome}`;
-    document.getElementById('dataList').appendChild(li);
-  }
-
-  // Fetch and display all data from Firestore
-  db.collection('tests').get().then((querySnapshot) => {
-    console.log("Fetched data:", querySnapshot);
-    querySnapshot.forEach((doc) => {
-      displayData(doc);
+    // Fetch and display all data from Firestore
+    db.collection('tests').get().then((querySnapshot) => {
+      querySnapshot.forEach((doc) => {
+        displayData(doc);
+      });
     });
-  }).catch((error) => {
-    console.error("Error fetching data:", error);
-  });
-
-    
-
   </script>
 </body>
 </html>
