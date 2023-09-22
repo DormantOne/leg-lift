@@ -2,11 +2,13 @@
 <html>
 <head>
   <title>Leg Lift Test</title>
-  <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+
+<script type="module">
+  import firebase from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+  import 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
   
-  <!-- Add Firestore -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+  // Your existing Firebase initialization and other code here
+</script>
 
 
 </head>
@@ -32,7 +34,10 @@
     </ul>
   </div>
 
-  <script>
+<script type="module">
+  import firebase from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+  import 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+
     // Your web app's Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyCCY8_z-0C0RCQUp9brvM0hFMd7VsrjSXo",
@@ -46,8 +51,9 @@
 
     // Initialize Firebase
       // Initialize Firebase
+  // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
-  var db = firebase.firestore();
+  const db = firebase.firestore();
   
 
     // Event listener for form submissions
