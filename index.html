@@ -77,12 +77,28 @@
       document.getElementById('dataList').appendChild(li);
     }
 
-    // Fetch and display all data from Firestore
-    db.collection('tests').get().then((querySnapshot) => {
-      querySnapshot.forEach((doc) => {
-        displayData(doc);
-      });
+
+
+      // Function to display data
+  function displayData(doc) {
+    console.log("Displaying data:", doc.data());
+    let li = document.createElement('li');
+    li.textContent = `Date: ${doc.data().date}, Room: ${doc.data().room}, Score: ${doc.data().legLiftingScore}, Outcome: ${doc.data().outcome}`;
+    document.getElementById('dataList').appendChild(li);
+  }
+
+  // Fetch and display all data from Firestore
+  db.collection('tests').get().then((querySnapshot) => {
+    console.log("Fetched data:", querySnapshot);
+    querySnapshot.forEach((doc) => {
+      displayData(doc);
     });
+  }).catch((error) => {
+    console.error("Error fetching data:", error);
+  });
+
+    
+
   </script>
 </body>
 </html>
