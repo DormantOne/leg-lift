@@ -80,15 +80,27 @@
       });
     });
 
-    function displayData(doc) {
+    function displayTestData(doc) {
       let li = document.createElement('li');
-      li.textContent = `Date: ${doc.data().date}, Room: ${doc.data().room}, Left Leg Strength: ${doc.data().leftLegStrength}, Right Leg Strength: ${doc.data().rightLegStrength}`;
+      li.textContent = `Test Data: Date: ${doc.data().date}, Room: ${doc.data().room}, Left Leg Strength: ${doc.data().leftLegStrength}, Right Leg Strength: ${doc.data().rightLegStrength}`;
       document.getElementById('dataList').appendChild(li);
     }
 
-    db.collection('tests').get().then((querySnapshot) => {
+    function displayOutcomeData(doc) {
+      let li = document.createElement('li');
+      li.textContent = `Outcome Data: Date: ${doc.data().date}, Room: ${doc.data().room}, Outcome: ${doc.data().outcome}`;
+      document.getElementById('dataList').appendChild(li);
+    }
+
+    db.collection('tests').onSnapshot((querySnapshot) => {
       querySnapshot.forEach((doc) => {
-        displayData(doc);
+        displayTestData(doc);
+      });
+    });
+
+    db.collection('outcomes').onSnapshot((querySnapshot) => {
+      querySnapshot.forEach((doc) => {
+        displayOutcomeData(doc);
       });
     });
 
