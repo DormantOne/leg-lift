@@ -137,9 +137,6 @@ function submitOutcome(room, outcomeDocId) {
       date: new Date().toISOString().split('T')[0],
       outcome: outcome
     }).then(() => {
-      if (outcome !== "Not Yet Answered" && outcomeDocId) {  // Check if outcomeDocId is not null
-        db.collection('outcomes').doc(outcomeDocId).delete();
-      }
       populateOutcomesSection();
     });
   } else {
@@ -148,13 +145,11 @@ function submitOutcome(room, outcomeDocId) {
       room: room,
       outcome: outcome
     }).then(() => {
-      if (outcome !== "Not Yet Answered" && outcomeDocId) {  // Check if outcomeDocId is not null
-        db.collection('outcomes').doc(outcomeDocId).delete();
-      }
       populateOutcomesSection();
     });
   }
 }
+
 
 // Updated deleteTest function
 function deleteTest(testDocId, room) {  // Pass room as an argument
