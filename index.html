@@ -132,13 +132,8 @@ function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
 function submitOutcome(room, outcomeDocId) {
   const outcome = document.querySelector(`input[name="outcome-${room}"]:checked`).value;
   
-  // Error trapping for null outcomeDocId
-  if (outcomeDocId === null) {
-    console.error('outcomeDocId is null. Exiting...');
-    return;
-  }
-
   if (outcomeDocId) {
+    // Update existing document
     db.collection('outcomes').doc(outcomeDocId).update({
       date: new Date().toISOString().split('T')[0],
       outcome: outcome
@@ -151,13 +146,14 @@ function submitOutcome(room, outcomeDocId) {
       console.error("Error updating document: ", error);
     });
   } else {
+    // Add new document
     db.collection('outcomes').add({
       date: new Date().toISOString().split('T')[0],
       room: room,
       outcome: outcome
-    }).then(() => {
+    }).then((docRef) => {
       if (outcome !== "Not Yet Answered") {  
-        db.collection('outcomes').doc(outcomeDocId).delete();
+        db.collection('outcomes').doc(docRef.id).delete(); // Delete newly added document
       }
       populateOutcomesSection();
     }).catch((error) => {
