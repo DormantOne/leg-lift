@@ -129,42 +129,43 @@ function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
 }
 
 
-// Updated Submit Outcome Function
 function submitOutcome(room, outcomeDocId) {
-  console.log('Submitting outcome for room:', room, 'and outcomeDocId:', outcomeDocId);  // Debugging line
-
   const outcome = document.querySelector(`input[name="outcome-${room}"]:checked`).value;
-  console.log('Selected outcome:', outcome);  // Debugging line
+  
+  // Error trapping for null outcomeDocId
+  if (outcomeDocId === null) {
+    console.error('outcomeDocId is null. Exiting...');
+    return;
+  }
 
   if (outcomeDocId) {
-    console.log('Updating existing outcome document.');  // Debugging line
     db.collection('outcomes').doc(outcomeDocId).update({
       date: new Date().toISOString().split('T')[0],
       outcome: outcome
-    })
-    .then(() => {
-      console.log('Outcome updated successfully.');  // Debugging line
+    }).then(() => {
+      if (outcome !== "Not Yet Answered") { 
+        db.collection('outcomes').doc(outcomeDocId).delete();
+      }
       populateOutcomesSection();
-    })
-    .catch((error) => {
-      console.error('Error updating document:', error);  // Error handling
+    }).catch((error) => {
+      console.error("Error updating document: ", error);
     });
   } else {
-    console.log('Adding new outcome document.');  // Debugging line
     db.collection('outcomes').add({
       date: new Date().toISOString().split('T')[0],
       room: room,
       outcome: outcome
-    })
-    .then(() => {
-      console.log('New outcome added successfully.');  // Debugging line
+    }).then(() => {
+      if (outcome !== "Not Yet Answered") {  
+        db.collection('outcomes').doc(outcomeDocId).delete();
+      }
       populateOutcomesSection();
-    })
-    .catch((error) => {
-      console.error('Error adding new document:', error);  // Error handling
+    }).catch((error) => {
+      console.error("Error adding document: ", error);
     });
   }
 }
+
 
 
 
