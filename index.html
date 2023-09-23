@@ -62,6 +62,8 @@
         room: roomNumber,
         leftLegStrength: leftLegStrength,
         rightLegStrength: rightLegStrength
+     }).then(() => {
+        populateOutcomesSection();  // Trigger after a new test is added
       });
     });
 
@@ -88,25 +90,35 @@
     });
 
 
-        // Populate the outcomes section with rooms that don't have outcomes yet
+    // Updated populateOutcomesSection
     function populateOutcomesSection() {
+      document.getElementById('outcomesSection').innerHTML = "<h2>Outcomes</h2>";  // Clear previous entries
       db.collection('tests').get().then((testSnapshot) => {
         testSnapshot.forEach((testDoc) => {
           const room = testDoc.data().room;
+          const date = testDoc.data().date;
           db.collection('outcomes').where('room', '==', room).get().then((outcomeSnapshot) => {
             if (outcomeSnapshot.empty) {
               let div = document.createElement('div');
               div.innerHTML = `
-                <span>Room: ${room}</span>
+                <span>Room: ${room}, Test Date: ${date}</span>
+                <input type="radio" name="outcome-${room}" value="Not Yet Answered" checked> Not Yet Answered
                 <input type="radio" name="outcome-${room}" value="Walk"> Walk
                 <input type="radio" name="outcome-${room}" value="Not Walked"> Not Walked
-                <input type="radio" name="outcome-${room}" value="Not Yet Answered"> Not Yet Answered
                 <button onclick="submitOutcome('${room}')">Submit Outcome</button>
+                <button onclick="deleteTest('${testDoc.id}')">Delete from Database</button>
               `;
               document.getElementById('outcomesSection').appendChild(div);
             }
           });
         });
+      });
+    }
+
+    // New deleteTest function
+    function deleteTest(docId) {
+      db.collection('tests').doc(docId).delete().then(() => {
+        populateOutcomesSection();  // Refresh outcomes section
       });
     }
 
