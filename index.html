@@ -91,46 +91,83 @@
 
 
     // Updated populateOutcomesSection
-    function populateOutcomesSection() {
-      document.getElementById('outcomesSection').innerHTML = "<h2>Outcomes</h2>";  // Clear previous entries
-      db.collection('tests').get().then((testSnapshot) => {
-        testSnapshot.forEach((testDoc) => {
-          const room = testDoc.data().room;
-          const date = testDoc.data().date;
-          db.collection('outcomes').where('room', '==', room).get().then((outcomeSnapshot) => {
-            if (outcomeSnapshot.empty) {
-              let div = document.createElement('div');
-              div.innerHTML = `
-                <span>Room: ${room}, Test Date: ${date}</span>
-                <input type="radio" name="outcome-${room}" value="Not Yet Answered" checked> Not Yet Answered
-                <input type="radio" name="outcome-${room}" value="Walk"> Walk
-                <input type="radio" name="outcome-${room}" value="Not Walked"> Not Walked
-                <button onclick="submitOutcome('${room}')">Submit Outcome</button>
-                <button onclick="deleteTest('${testDoc.id}')">Delete from Database</button>
-              `;
-              document.getElementById('outcomesSection').appendChild(div);
-            }
-          });
+  function populateOutcomesSection() {
+    document.getElementById('outcomesSection').innerHTML = "<h2>Outcomes</h2>";  // Clear previous entries
+    db.collection('tests').get().then((testSnapshot) => {
+      testSnapshot.forEach((testDoc) => {
+        const room = testDoc.data().room;
+        const date = testDoc.data().date;
+        db.collection('outcomes').where('room', '==', room).get().then((outcomeSnapshot) => {
+          if (outcomeSnapshot.empty) {
+            createOutcomeDiv(room, date, testDoc.id);
+          } else {
+            outcomeSnapshot.forEach((outcomeDoc) => {
+              if (outcomeDoc.data().outcome === "Not Yet Answered") {
+                createOutcomeDiv(room, date, testDoc.id, outcomeDoc.id);
+              }
+            });
+          }
         });
       });
-    }
+    });
+  }
 
-    // New deleteTest function
-    function deleteTest(docId) {
-      db.collection('tests').doc(docId).delete().then(() => {
-        populateOutcomesSection();  // Refresh outcomes section
-      });
-    }
 
-    // Submit Outcome Function
-    function submitOutcome(room) {
-      const outcome = document.querySelector(`input[name="outcome-${room}"]:checked`).value;
-      db.collection('outcomes').add({
-        date: new Date().toISOString().split('T')[0],
-        room: room,
-        outcome: outcome
+
+// Function to create Outcome Div
+function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
+  let div = document.createElement('div');
+  div.innerHTML = `
+    <span>Room: ${room}, Test Date: ${date}</span>
+    <input type="radio" name="outcome-${room}" value="Not Yet Answered" checked> Not Yet Answered
+    <input type="radio" name="outcome-${room}" value="Walk"> Walk
+    <input type="radio" name="outcome-${room}" value="Not Walked"> Not Walked
+    <button onclick="submitOutcome('${room}', '${outcomeDocId}')">Submit Outcome</button>
+    <button onclick="deleteTest('${testDocId}', '${room}')">Delete from Database</button> <!-- Here is the change -->
+  `;
+  document.getElementById('outcomesSection').appendChild(div);
+}
+
+
+// Updated Submit Outcome Function
+function submitOutcome(room, outcomeDocId) {
+  const outcome = document.querySelector(`input[name="outcome-${room}"]:checked`).value;
+  if (outcomeDocId) {
+    db.collection('outcomes').doc(outcomeDocId).update({
+      date: new Date().toISOString().split('T')[0],
+      outcome: outcome
+    }).then(() => {
+      if (outcome !== "Not Yet Answered" && outcomeDocId) {  // Check if outcomeDocId is not null
+        db.collection('outcomes').doc(outcomeDocId).delete();
+      }
+      populateOutcomesSection();
+    });
+  } else {
+    db.collection('outcomes').add({
+      date: new Date().toISOString().split('T')[0],
+      room: room,
+      outcome: outcome
+    }).then(() => {
+      if (outcome !== "Not Yet Answered" && outcomeDocId) {  // Check if outcomeDocId is not null
+        db.collection('outcomes').doc(outcomeDocId).delete();
+      }
+      populateOutcomesSection();
+    });
+  }
+}
+
+// Updated deleteTest function
+function deleteTest(testDocId, room) {  // Pass room as an argument
+  db.collection('tests').doc(testDocId).delete().then(() => {
+    db.collection('outcomes').where('room', '==', room).get().then((querySnapshot) => {
+      querySnapshot.forEach((doc) => {
+        doc.ref.delete();
       });
-    }
+    });
+    populateOutcomesSection();  // Refresh outcomes section
+  });
+}
+
 
     populateOutcomesSection();
 
