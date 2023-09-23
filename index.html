@@ -67,14 +67,25 @@
       });
     });
 
+// Listening for changes in 'outcomes' collection
+db.collection('outcomes').onSnapshot((querySnapshot) => {
+  // Clear existing data
+  document.getElementById('dataList').innerHTML = '';
 
+  // Display new data
+  querySnapshot.forEach((doc) => {
+    displayOutcomeData(doc);
+  });
+});
 
-    function displayTestData(doc) {
-      let li = document.createElement('li');
-      li.textContent = `Test Data: Date: ${doc.data().date}, Room: ${doc.data().room}, Left Leg Strength: ${doc.data().leftLegStrength}, Right Leg Strength: ${doc.data().rightLegStrength}`;
-      document.getElementById('dataList').appendChild(li);
-    }
+// Function to display test data
+function displayTestData(doc) {
+  let li = document.createElement('li');
+  li.textContent = `Test Data: Date: ${doc.data().date}, Room: ${doc.data().room}, Left Leg Strength: ${doc.data().leftLegStrength}, Right Leg Strength: ${doc.data().rightLegStrength}`;
+  document.getElementById('dataList').appendChild(li);
+}
 
+// Function to display outcome data
 function displayOutcomeData(doc) {
   let li = document.createElement('li');
   li.textContent = `Outcome Data: ID: ${doc.id}, Date: ${doc.data().date}, Room: ${doc.data().room}, Outcome: ${doc.data().outcome}`;
@@ -82,34 +93,39 @@ function displayOutcomeData(doc) {
 }
 
 
-    db.collection('outcomes').onSnapshot((querySnapshot) => {
-      querySnapshot.forEach((doc) => {
-        displayOutcomeData(doc);
-      });
-    });
 
 
-    // Updated populateOutcomesSection
-  function populateOutcomesSection() {
-    document.getElementById('outcomesSection').innerHTML = "<h2>Outcomes</h2>";  // Clear previous entries
-    db.collection('tests').get().then((testSnapshot) => {
-      testSnapshot.forEach((testDoc) => {
-        const room = testDoc.data().room;
-        const date = testDoc.data().date;
-        db.collection('outcomes').where('room', '==', room).get().then((outcomeSnapshot) => {
-          if (outcomeSnapshot.empty) {
-            createOutcomeDiv(room, date, testDoc.id);
-          } else {
-            outcomeSnapshot.forEach((outcomeDoc) => {
-              if (outcomeDoc.data().outcome === "Not Yet Answered") {
-                createOutcomeDiv(room, date, testDoc.id, outcomeDoc.id);
-              }
-            });
-          }
-        });
+
+// Updated populateOutcomesSection
+function populateOutcomesSection() {
+  document.getElementById('outcomesSection').innerHTML = "<h2>Outcomes</h2>";  // Clear previous entries
+
+  // Listen to changes in the 'tests' collection
+  db.collection('tests').onSnapshot((testSnapshot) => {
+    // Clear existing data in dataList
+    document.getElementById('dataList').innerHTML = '';
+
+    // Display new data for 'tests'
+    testSnapshot.forEach((testDoc) => {
+      displayTestData(testDoc);
+
+      const room = testDoc.data().room;
+      const date = testDoc.data().date;
+      db.collection('outcomes').where('room', '==', room).get().then((outcomeSnapshot) => {
+        if (outcomeSnapshot.empty) {
+          createOutcomeDiv(room, date, testDoc.id);
+        } else {
+          outcomeSnapshot.forEach((outcomeDoc) => {
+            if (outcomeDoc.data().outcome === "Not Yet Answered") {
+              createOutcomeDiv(room, date, testDoc.id, outcomeDoc.id);
+            }
+          });
+        }
       });
     });
-  }
+  });
+}
+
 
 function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
   console.log("createOutcomeDiv called with outcomeDocId:", outcomeDocId);  // Debugging line
