@@ -27,14 +27,11 @@
     <input type="submit" value="Submit">
   </form>
 
-  <!-- Outcome Form -->
-  <form id="outcomeForm">
-    <select id="existingRooms"></select>
-    <input type="date" id="outcomeDate" name="outcomeDate" required>
-    <label for="outcome">Can walk next day</label>
-    <input type="checkbox" id="outcome" name="outcome">
-    <input type="submit" value="Submit Outcome">
-  </form>
+  <!-- Outcome Section -->
+  <div id="outcomesSection">
+    <h2>Outcomes</h2>
+    <!-- Outcomes will be populated here -->
+  </div>
 
   <!-- Data Display -->
   <div id="dataDisplay">
@@ -68,17 +65,7 @@
       });
     });
 
-    document.getElementById('outcomeForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const roomNumber = document.getElementById('existingRooms').value;
-      const outcomeDate = document.getElementById('outcomeDate').value;
-      const outcome = document.getElementById('outcome').checked;
-      db.collection('outcomes').add({
-        date: outcomeDate,
-        room: roomNumber,
-        outcome: outcome
-      });
-    });
+
 
     function displayTestData(doc) {
       let li = document.createElement('li');
@@ -92,11 +79,7 @@
       document.getElementById('dataList').appendChild(li);
     }
 
-    db.collection('tests').onSnapshot((querySnapshot) => {
-      querySnapshot.forEach((doc) => {
-        displayTestData(doc);
-      });
-    });
+
 
     db.collection('outcomes').onSnapshot((querySnapshot) => {
       querySnapshot.forEach((doc) => {
@@ -104,15 +87,41 @@
       });
     });
 
-    db.collection('tests').get().then((querySnapshot) => {
-      const roomSelect = document.getElementById('existingRooms');
-      querySnapshot.forEach((doc) => {
-        let option = document.createElement('option');
-        option.value = doc.data().room;
-        option.textContent = doc.data().room;
-        roomSelect.appendChild(option);
+
+        // Populate the outcomes section with rooms that don't have outcomes yet
+    function populateOutcomesSection() {
+      db.collection('tests').get().then((testSnapshot) => {
+        testSnapshot.forEach((testDoc) => {
+          const room = testDoc.data().room;
+          db.collection('outcomes').where('room', '==', room).get().then((outcomeSnapshot) => {
+            if (outcomeSnapshot.empty) {
+              let div = document.createElement('div');
+              div.innerHTML = `
+                <span>Room: ${room}</span>
+                <input type="radio" name="outcome-${room}" value="Walk"> Walk
+                <input type="radio" name="outcome-${room}" value="Not Walked"> Not Walked
+                <input type="radio" name="outcome-${room}" value="Not Yet Answered"> Not Yet Answered
+                <button onclick="submitOutcome('${room}')">Submit Outcome</button>
+              `;
+              document.getElementById('outcomesSection').appendChild(div);
+            }
+          });
+        });
       });
-    });
+    }
+
+    // Submit Outcome Function
+    function submitOutcome(room) {
+      const outcome = document.querySelector(`input[name="outcome-${room}"]:checked`).value;
+      db.collection('outcomes').add({
+        date: new Date().toISOString().split('T')[0],
+        room: room,
+        outcome: outcome
+      });
+    }
+
+    populateOutcomesSection();
+
   </script>
 </body>
 </html>
