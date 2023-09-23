@@ -2,9 +2,7 @@
 <html>
 <head>
   <title>Leg Lift Test</title>
-  <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <!-- Add Firestore -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 </head>
 <body>
@@ -31,7 +29,7 @@
 
   <!-- Outcome Form -->
   <form id="outcomeForm">
-    <input type="text" id="outcomeRoomNumber" name="outcomeRoomNumber" placeholder="Room Number" required>
+    <select id="existingRooms"></select>
     <input type="date" id="outcomeDate" name="outcomeDate" required>
     <label for="outcome">Can walk next day</label>
     <input type="checkbox" id="outcome" name="outcome">
@@ -45,7 +43,6 @@
   </div>
 
   <script>
-    // Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyCCY8_z-0C0RCQUp9brvM0hFMd7VsrjSXo",
       authDomain: "leg-lift.firebaseapp.com",
@@ -55,40 +52,55 @@
       appId: "1:973223228733:web:be43c16653cac99fe90154",
       measurementId: "G-0YK2ZTNCVX"
     };
-
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Event Listener for Test Form
     document.getElementById('testForm').addEventListener('submit', function(e) {
       e.preventDefault();
-      
-      const testDate = new Date().toISOString().split('T')[0];
       const roomNumber = document.getElementById('roomNumber').value;
-      const legStrengthLeft = document.querySelector('input[name="leftLeg"]:checked').value;
-      const legStrengthRight = document.querySelector('input[name="rightLeg"]:checked').value;
-
+      const leftLegStrength = document.querySelector('input[name="leftLeg"]:checked').value;
+      const rightLegStrength = document.querySelector('input[name="rightLeg"]:checked').value;
       db.collection('tests').add({
-        date: testDate,
+        date: new Date().toISOString().split('T')[0],
         room: roomNumber,
-        legStrengthLeft: parseInt(legStrengthLeft),
-        legStrengthRight: parseInt(legStrengthRight)
-      })
-      .then((docRef) => {
-        console.log("Document written with ID: ", docRef.id);
-      })
-      .catch((error) => {
-        console.error("Error adding document: ", error);
+        leftLegStrength: leftLegStrength,
+        rightLegStrength: rightLegStrength
       });
     });
 
-    // Display Test Data
-    function displayTestData(doc) {
+    document.getElementById('outcomeForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const roomNumber = document.getElementById('existingRooms').value;
+      const outcomeDate = document.getElementById('outcomeDate').value;
+      const outcome = document.getElementById('outcome').checked;
+      db.collection('outcomes').add({
+        date: outcomeDate,
+        room: roomNumber,
+        outcome: outcome
+      });
+    });
+
+    function displayData(doc) {
       let li = document.createElement('li');
-      li.textContent = `Test Data: Date: ${doc.data().date}, Room: ${doc.data().room}, Left Leg Strength: ${doc.data().legStrengthLeft}, Right Leg Strength: ${doc.data().legStrengthRight}`;
+      li.textContent = `Date: ${doc.data().date}, Room: ${doc.data().room}, Left Leg Strength: ${doc.data().leftLegStrength}, Right Leg Strength: ${doc.data().rightLegStrength}`;
       document.getElementById('dataList').appendChild(li);
     }
 
-    // Display Outcome Data
-    function
+    db.collection('tests').get().then((querySnapshot) => {
+      querySnapshot.forEach((doc) => {
+        displayData(doc);
+      });
+    });
+
+    db.collection('tests').get().then((querySnapshot) => {
+      const roomSelect = document.getElementById('existingRooms');
+      querySnapshot.forEach((doc) => {
+        let option = document.createElement('option');
+        option.value = doc.data().room;
+        option.textContent = doc.data().room;
+        roomSelect.appendChild(option);
+      });
+    });
+  </script>
+</body>
+</html>
