@@ -75,12 +75,11 @@
       document.getElementById('dataList').appendChild(li);
     }
 
-    function displayOutcomeData(doc) {
-      let li = document.createElement('li');
-      li.textContent = `Outcome Data: Date: ${doc.data().date}, Room: ${doc.data().room}, Outcome: ${doc.data().outcome}`;
-      document.getElementById('dataList').appendChild(li);
-    }
-
+function displayOutcomeData(doc) {
+  let li = document.createElement('li');
+  li.textContent = `Outcome Data: ID: ${doc.id}, Date: ${doc.data().date}, Room: ${doc.data().room}, Outcome: ${doc.data().outcome}`;
+  document.getElementById('dataList').appendChild(li);
+}
 
 
     db.collection('outcomes').onSnapshot((querySnapshot) => {
@@ -133,12 +132,12 @@ function submitOutcome(room, outcomeDocId) {
   console.log("submitOutcome called with outcomeDocId:", outcomeDocId);  // Debugging line
   
   const outcome = document.querySelector(`input[name="outcome-${room}"]:checked`).value;
-  if (outcomeDocId) {
+  if (outcomeDocId && outcomeDocId !== 'null') {  // Add additional null check
     db.collection('outcomes').doc(outcomeDocId).update({
       date: new Date().toISOString().split('T')[0],
       outcome: outcome
     }).then(() => {
-      if (outcome !== "Not Yet Answered" && outcomeDocId) {  // Check if outcomeDocId is not null
+      if (outcome !== "Not Yet Answered" && outcomeDocId) {
         db.collection('outcomes').doc(outcomeDocId).delete();
       }
       populateOutcomesSection();
@@ -151,7 +150,7 @@ function submitOutcome(room, outcomeDocId) {
       room: room,
       outcome: outcome
     }).then(() => {
-      if (outcome !== "Not Yet Answered" && outcomeDocId) {  // Check if outcomeDocId is not null
+      if (outcome !== "Not Yet Answered") {
         db.collection('outcomes').doc(outcomeDocId).delete();
       }
       populateOutcomesSection();
@@ -160,7 +159,6 @@ function submitOutcome(room, outcomeDocId) {
     });
   }
 }
-
 
 // Updated deleteTest function
 function deleteTest(testDocId, room) {  // Pass room as an argument
