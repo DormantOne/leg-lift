@@ -78,12 +78,24 @@ db.collection('outcomes').onSnapshot((querySnapshot) => {
   });
 });
 
-// Function to display test data
+// Function to display test data along with the associated outcome
 function displayTestData(doc) {
   let li = document.createElement('li');
-  li.textContent = `Test Data: Date: ${doc.data().date}, Room: ${doc.data().room}, Left Leg Strength: ${doc.data().leftLegStrength}, Right Leg Strength: ${doc.data().rightLegStrength}`;
-  document.getElementById('dataList').appendChild(li);
+  const room = doc.data().room;
+
+  // Fetch the associated outcome based on the room
+  db.collection('outcomes').where('room', '==', room).get().then((outcomeSnapshot) => {
+    let outcomeText = 'Not Yet Answered'; // Default value if no outcome is found
+    outcomeSnapshot.forEach((outcomeDoc) => {
+      outcomeText = outcomeDoc.data().outcome;
+    });
+
+    // Now append the outcome to the list item text
+    li.textContent = `Test Data: Date: ${doc.data().date}, Room: ${room}, Left Leg Strength: ${doc.data().leftLegStrength}, Right Leg Strength: ${doc.data().rightLegStrength}, Outcome: ${outcomeText}`;
+    document.getElementById('dataList').appendChild(li);
+  });
 }
+
 
 // Function to display outcome data
 function displayOutcomeData(doc) {
@@ -136,7 +148,7 @@ function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
     <input type="radio" name="outcome-${room}" value="Not Yet Answered" checked> Not Yet Answered
     <input type="radio" name="outcome-${room}" value="Walk"> Walk
     <input type="radio" name="outcome-${room}" value="Not Walked"> Not Walked
-    <button onclick="submitOutcome('${room}', '${outcomeDocId}')">Submit Outcome</button>
+    <button onclick="submitOutcome('${room}', '${outcomeDocId}', '${testDocId}')">Submit Outcome</button>
     <button onclick="deleteTest('${testDocId}', '${room}')">Delete from Database</button>
   `;
   document.getElementById('outcomesSection').appendChild(div);
@@ -144,14 +156,14 @@ function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
 
 
 
-function submitOutcome(room, outcomeDocId) {
-  console.log("submitOutcome called with outcomeDocId:", outcomeDocId);  // Debugging line
-  
+// Updated Submit Outcome Function
+function submitOutcome(room, outcomeDocId, testDocId) {  // Add 'testDocId' as a new parameter
   const outcome = document.querySelector(`input[name="outcome-${room}"]:checked`).value;
-  if (outcomeDocId && outcomeDocId !== 'null') {  // Add additional null check
+  if (outcomeDocId && outcomeDocId !== 'null') {
     db.collection('outcomes').doc(outcomeDocId).update({
       date: new Date().toISOString().split('T')[0],
-      outcome: outcome
+      outcome: outcome,
+      testId: testDocId  // Add this line
     }).then(() => {
       if (outcome !== "Not Yet Answered" && outcomeDocId) {
         db.collection('outcomes').doc(outcomeDocId).delete();
@@ -164,10 +176,11 @@ function submitOutcome(room, outcomeDocId) {
     db.collection('outcomes').add({
       date: new Date().toISOString().split('T')[0],
       room: room,
-      outcome: outcome
+      outcome: outcome,
+      testId: testDocId  // Add this line
     }).then(() => {
       if (outcome !== "Not Yet Answered") {
-        db.collection('outcomes').doc(outcomeDocId).delete();
+        // Removed the delete call from here
       }
       populateOutcomesSection();
     }).catch((error) => {
@@ -175,6 +188,7 @@ function submitOutcome(room, outcomeDocId) {
     });
   }
 }
+
 
 // Updated deleteTest function
 function deleteTest(testDocId, room) {  // Pass room as an argument
