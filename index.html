@@ -25,6 +25,8 @@
       <label><input type="radio" name="rightLeg" value="0"> Cannot bend knee or get heel off bed</label>
     </fieldset>
     <input type="submit" value="Submit">
+      <!-- Add a Clear button -->
+  <button type="button" onclick="clearTestForm()">Clear</button>
   </form>
 
   <!-- Outcome Section -->
@@ -68,6 +70,22 @@
     });
 
 
+function clearTestForm() {
+  // Reset the roomNumber input
+  document.getElementById('roomNumber').value = '';
+
+  // Uncheck all radio buttons for left and right leg strength
+  const leftLegRadios = document.querySelectorAll('input[name="leftLeg"]');
+  const rightLegRadios = document.querySelectorAll('input[name="rightLeg"]');
+  
+  leftLegRadios.forEach((radio) => {
+    radio.checked = false;
+  });
+
+  rightLegRadios.forEach((radio) => {
+    radio.checked = false;
+  });
+}
 
     function displayTestData(doc) {
       let li = document.createElement('li');
