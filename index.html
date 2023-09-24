@@ -4,6 +4,10 @@
   <title>Leg Lift Test</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+   <script type="module">
+    import { fetchDataAndPerformStatistics } from './statistics.js';
+    window.fetchDataAndPerformStatistics = fetchDataAndPerformStatistics;
+  </script>
 </head>
 <body>
 
@@ -41,6 +45,12 @@
     <h2>Stored Data</h2>
     <ul id="dataList"></ul>
   </div>
+
+  <!-- Place the button where you want it -->
+  <button onclick="fetchDataAndPerformStatistics()">Calculate Correlation</button>
+
+  <!-- A div to potentially display the results -->
+  <div id="statisticsOutput"></div>
 
   <script>
     // Initialize Firebase
