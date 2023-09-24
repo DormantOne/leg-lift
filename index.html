@@ -54,20 +54,34 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    document.getElementById('testForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const roomNumber = document.getElementById('roomNumber').value;
-      const leftLegStrength = document.querySelector('input[name="leftLeg"]:checked').value;
-      const rightLegStrength = document.querySelector('input[name="rightLeg"]:checked').value;
-      db.collection('tests').add({
-        date: new Date().toISOString().split('T')[0],
-        room: roomNumber,
-        leftLegStrength: leftLegStrength,
-        rightLegStrength: rightLegStrength
-     }).then(() => {
-        populateOutcomesSection();  // Trigger after a new test is added
-      });
+    document.getElementById('testForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const roomNumber = document.getElementById('roomNumber').value;
+  const leftLegStrength = document.querySelector('input[name="leftLeg"]:checked').value;
+  const rightLegStrength = document.querySelector('input[name="rightLeg"]:checked').value;
+
+  try {
+    // Add the test document and capture the reference
+    const testDocRef = await db.collection('tests').add({
+      date: new Date().toISOString().split('T')[0],
+      room: roomNumber,
+      leftLegStrength: leftLegStrength,
+      rightLegStrength: rightLegStrength
     });
+
+    // Retrieve the test document ID from the reference
+    const testDocId = testDocRef.id;
+
+    // Trigger the submitOutcome function with the necessary parameters
+    await submitOutcome(roomNumber, outcomeDocId, testDocId);
+
+    // Refresh the outcomes section after adding the outcome
+    populateOutcomesSection();
+  } catch (error) {
+    console.error("Error adding test document:", error);
+  }
+});
+
 
 
 function clearTestForm() {
