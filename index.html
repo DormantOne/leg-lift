@@ -115,7 +115,7 @@ function populateOutcomesSection(testDocId = null, testTimestamp = null, leftLeg
 }
 
 
-function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
+function createOutcomeDiv(room, date, testDocId, outcomeDocId = null, testTimestamp = null, leftLegStrength = null, rightLegStrength = null) {
   console.log("createOutcomeDiv called with outcomeDocId:", outcomeDocId);  // Debugging line
   
   let div = document.createElement('div');
@@ -124,9 +124,9 @@ function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
     <input type="radio" name="outcome-${room}" value="Not Yet Answered" checked> Not Yet Answered
     <input type="radio" name="outcome-${room}" value="Walk"> Walk
     <input type="radio" name="outcome-${room}" value="Not Walked"> Not Walked
-    <button onclick="submitOutcome('${room}', '${outcomeDocId}')">Submit Outcome</button>
     <button onclick="submitOutcome('${room}', '${outcomeDocId}', '${testDocId}', '${testTimestamp}', ${leftLegStrength}, ${rightLegStrength})">Submit Outcome</button>
-   `;
+    <button onclick="deleteTest('${testDocId}', '${room}')">Delete from Database</button>
+  `;
   document.getElementById('outcomesSection').appendChild(div);
 }
 
