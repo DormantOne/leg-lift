@@ -145,34 +145,42 @@ function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
 }
 
 
-
-async function submitOutcome(room, outcomeDocId) {
+async function submitOutcome(room, outcomeDocId, testDocRef) {
   console.log("submitOutcome called with outcomeDocId:", outcomeDocId);  // Debugging line
 
   const outcome = document.querySelector(`input[name="outcome-${room}"]:checked`).value;
 
   try {
-    if (outcomeDocId && outcomeDocId !== 'null') {
-      // Update existing outcome
-      await db.collection('outcomes').doc(outcomeDocId).update({
-        date: firebase.firestore.Timestamp.now(),
-        outcome: outcome
-      });
+    const testDoc = await testDocRef.get();
+    if (testDoc.exists) {
+      const testId = testDoc.id; // Get the test document ID
 
-      if (outcome !== "Not Yet Answered") {
-        await db.collection('outcomes').doc(outcomeDocId).delete();
+      if (outcomeDocId && outcomeDocId !== 'null') {
+        // Update existing outcome
+        await db.collection('outcomes').doc(outcomeDocId).update({
+          date: firebase.firestore.Timestamp.now(),
+          outcome: outcome,
+          testId: testId // Include the test ID in the outcome document
+        });
+
+        if (outcome !== "Not Yet Answered") {
+          await db.collection('outcomes').doc(outcomeDocId).delete();
+        }
+      } else {
+        // Add a new outcome
+        await db.collection('outcomes').add({
+          date: firebase.firestore.Timestamp.now(),
+          room: room,
+          outcome: outcome,
+          testId: testId // Include the test ID in the outcome document
+        });
       }
-    } else {
-      // Add a new outcome
-      await db.collection('outcomes').add({
-        date: firebase.firestore.Timestamp.now(),
-        room: room,
-        outcome: outcome
-      });
-    }
 
-    // After updating or adding the outcome, refresh the outcomes section
-    await populateOutcomesSection();
+      // After updating or adding the outcome, refresh the outcomes section
+      await populateOutcomesSection();
+    } else {
+      console.error("Test document not found");
+    }
   } catch (error) {
     console.error("Error updating or adding document: ", error);
   }
