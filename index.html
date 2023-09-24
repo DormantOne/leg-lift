@@ -94,17 +94,19 @@ function displayTestData(doc) {
 }
 
 
-// Function to display outcome data
+
+
 function displayOutcomeData(doc) {
+  console.log("displayOutcomeData called");  // Debugging line
   let li = document.createElement('li');
   li.textContent = `Outcome Data: ID: ${doc.id}, Date: ${doc.data().date}, Room: ${doc.data().room}, Outcome: ${doc.data().outcome}`;
   document.getElementById('dataList').appendChild(li);
 }
 
-    
 
 function populateOutcomesSection() {
   // Detach the previous listener for 'tests' if it exists
+  console.log("populateOutcomesSection called");  // Debugging line
   if (testsListener) {
     testsListener();
     testsListener = null;
