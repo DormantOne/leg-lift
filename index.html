@@ -52,6 +52,10 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    let outcomesListener = null;
+let testsListener = null;  // Add this
+
+    
     document.getElementById('testForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const roomNumber = document.getElementById('roomNumber').value;
@@ -106,20 +110,27 @@ function displayOutcomeData(doc) {
   document.getElementById('dataList').appendChild(li);
 }
 
+    
 
-
-
-
-// Updated populateOutcomesSection
 function populateOutcomesSection() {
-  document.getElementById('outcomesSection').innerHTML = "<h2>Outcomes</h2>";  // Clear previous entries
+  // Detach the previous listener for 'tests' if it exists
+  if (testsListener) {
+    testsListener();
+  }
 
-  // Listen to changes in the 'tests' collection
-  db.collection('tests').onSnapshot((testSnapshot) => {
+  // Detach the previous listener for 'outcomes' if it exists
+  if (outcomesListener) {
+    outcomesListener();
+  }
+
+  // Clear previous entries
+  document.getElementById('outcomesSection').innerHTML = "<h2>Outcomes</h2>";  
+
+  // Attach a new listener for 'tests' and store the unsubscribe function
+  testsListener = db.collection('tests').onSnapshot((testSnapshot) => {
     // Clear existing data in dataList
     document.getElementById('dataList').innerHTML = '';
 
-    // Display new data for 'tests'
     testSnapshot.forEach((testDoc) => {
       displayTestData(testDoc);
 
@@ -138,8 +149,18 @@ function populateOutcomesSection() {
       });
     });
   });
-}
 
+  // Attach a new listener for 'outcomes' and store the unsubscribe function
+  outcomesListener = db.collection('outcomes').onSnapshot((querySnapshot) => {
+    // Clear existing data
+    document.getElementById('dataList').innerHTML = '';
+
+    // Display new data
+    querySnapshot.forEach((doc) => {
+      displayOutcomeData(doc);
+    });
+  });
+}
 
 
 function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
