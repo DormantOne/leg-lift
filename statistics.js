@@ -10,9 +10,13 @@ function fetchDataAndPerformStatistics() {
       outcomesData.push(doc.data());
       dataPointIds.push(doc.id);
     });
+    // Move this line out of the forEach loop
+    window.lastKnownDataPoints = outcomesData.length;
+    
     await performStatistics(outcomesData, dataPointIds);
   });
 }
+
 
 async function performStatistics(data, dataPointIds) {
   const totalDataPoints = data.length;
