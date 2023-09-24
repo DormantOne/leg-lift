@@ -1,15 +1,4 @@
-// Initialize Firebase (If you've initialized it elsewhere, remove this part)
-const firebaseConfig = {
-  apiKey: "AIzaSyCCY8_z-0C0RCQUp9brvM0hFMd7VsrjSXo",
-  authDomain: "leg-lift.firebaseapp.com",
-  projectId: "leg-lift",
-  storageBucket: "leg-lift.appspot.com",
-  messagingSenderId: "973223228733",
-  appId: "1:973223228733:web:be43c16653cac99fe90154",
-  measurementId: "G-0YK2ZTNCVX"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+
 
 // Exported function to fetch data and perform statistics
 export function fetchDataAndPerformStatistics() {
@@ -41,6 +30,12 @@ function performStatistics(data) {
   // Log or display the results (this can be changed as needed)
   console.log(`Total data points: ${totalDataPoints}`);
   console.log(`Correlation between combined score and outcome: ${correlation}`);
+
+document.getElementById("statisticalOutput").innerHTML = `
+  <p>Total data points: ${totalDataPoints}</p>
+  <p>Correlation between combined score and outcome: ${correlation}</p>
+`;
+
 }
 
 // Function to calculate Pearson correlation
