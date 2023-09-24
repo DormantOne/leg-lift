@@ -102,31 +102,58 @@
     });
 
 function fetchLatestStatistics() {
-  // Fetch all statistics and populate the table
-  db.collection('statistics').orderBy('timestamp', 'desc').get().then((querySnapshot) => {
-    const statsOutputDiv = document.getElementById("statisticsOutput");
-    statsOutputDiv.innerHTML = '<table><thead><tr><th>Total Data Points</th><th>Correlation</th><th>ID</th></tr></thead><tbody></tbody></table>';
-    const tableBody = statsOutputDiv.querySelector('tbody');
-    
-    querySnapshot.forEach((doc) => {
+  // Fetch the most recent statistical analysis
+  db.collection('statistics').orderBy('timestamp', 'desc').limit(1).get().then((querySnapshot) => {
+    querySnapshot.forEach(async (doc) => {
       const data = doc.data();
-      tableBody.innerHTML += `
-        <tr>
-          <td>${data.totalDataPoints}</td>
-          <td>${data.correlation}</td>
-          <td>${doc.id}</td>
-        </tr>
+      const dataPointIds = data.dataPointIds; // The IDs of the data points used in this analysis
+      
+      // Fetch these data points from the 'outcomes' collection
+      let outcomesData = [];
+      for (const id of dataPointIds) {
+        const doc = await db.collection('outcomes').doc(id).get();
+        outcomesData.push(doc.data());
+      }
+
+      // Create the table
+      let tableHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Left Leg Score</th>
+              <th>Right Leg Score</th>
+              <th>Total</th>
+              <th>Outcome</th>
+              <th>Correlation</th>
+            </tr>
+          </thead>
+          <tbody>
       `;
+
+      outcomesData.forEach((outcomeData) => {
+        const total = parseInt(outcomeData.leftLegStrength) + parseInt(outcomeData.rightLegStrength);
+        tableHTML += `
+          <tr>
+            <td>${outcomeData.leftLegStrength}</td>
+            <td>${outcomeData.rightLegStrength}</td>
+            <td>${total}</td>
+            <td>${outcomeData.outcome}</td>
+            <td>${data.correlation}</td>
+          </tr>
+        `;
+      });
+
+      tableHTML += `
+          </tbody>
+        </table>
+      `;
+
+      // Insert the table into the HTML
+      document.getElementById("statisticsOutput").innerHTML = tableHTML;
     });
   });
-  
-  // Count and return remaining test data that have no outcome yet
-  db.collection('tests').get().then((querySnapshot) => {
-    const remainingTests = querySnapshot.size;
-    const statsOutputDiv = document.getElementById("statisticsOutput");
-    statsOutputDiv.innerHTML += `<p>Remaining tests without outcomes: ${remainingTests}</p>`;
-  });
 }
+
 
 
 // Function to add test data
