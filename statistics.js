@@ -1,64 +1,49 @@
-// Import Firebase Firestore
-import firebase from "firebase/app";
-import "firebase/firestore";
+// Assuming Firebase is already included and initialized in your HTML
 
-// Initialize Firestore
-const db = firebase.firestore();
+const db = firebase.firestore();  // Firebase should be initialized in the HTML
 
-// Exported function to fetch data and perform statistics
-export function fetchDataAndPerformStatistics() {
+function fetchDataAndPerformStatistics() {
   let outcomesData = [];
-  let dataPointIds = [];  // To store the IDs of each data point
+  let dataPointIds = [];
   db.collection('outcomes').get().then(async (querySnapshot) => {
     querySnapshot.forEach((doc) => {
       outcomesData.push(doc.data());
-      dataPointIds.push(doc.id);  // Store the ID of each data point
+      dataPointIds.push(doc.id);
     });
-    // Perform statistics and save them to Firebase
     await performStatistics(outcomesData, dataPointIds);
   });
 }
 
 async function performStatistics(data, dataPointIds) {
-  // Total data points
   const totalDataPoints = data.length;
-  
-  // Transform outcomes to numerical values
   const numericalData = data.map(item => ({
     combinedScore: parseInt(item.leftLegStrength) + parseInt(item.rightLegStrength),
     outcome: item.outcome === 'Walked' ? 1 : 0
   }));
-  
-  // Calculate correlation
+
   const combinedScores = numericalData.map(item => item.combinedScore);
   const outcomes = numericalData.map(item => item.outcome);
   const correlation = calculateCorrelation(combinedScores, outcomes);
 
-  // Prepare the statistics object
   const statistics = {
     totalDataPoints: totalDataPoints,
     correlation: correlation,
     dataPointIds: dataPointIds
   };
 
-  // Save the statistics to Firebase
   const statsDocRef = await db.collection('statistics').add({
     ...statistics,
     timestamp: firebase.firestore.FieldValue.serverTimestamp()
   });
 
-  // Add the Firestore document ID to the statistics object
   statistics.id = statsDocRef.id;
 
-  // Update the DOM
   document.getElementById("statisticsOutput").innerHTML = `
     <p>Total data points: ${totalDataPoints}</p>
     <p>Correlation between combined score and outcome: ${correlation}</p>
     <p>Statistics ID: ${statistics.id}</p>
   `;
 }
-
-
 
 // Function to calculate Pearson correlation
 function calculateCorrelation(x, y) {
@@ -77,3 +62,6 @@ function calculateCorrelation(x, y) {
   
   return num / Math.sqrt(denX * denY);
 }
+
+// Attach to the global window object if you want to call it from the HTML
+window.fetchDataAndPerformStatistics = fetchDataAndPerformStatistics;
