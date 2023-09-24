@@ -221,7 +221,6 @@ function addOutcome(testId, testData) {
       <legend>Outcome for Room: ${testData.room}, Date: ${testData.date}</legend>
       <label><input type="radio" name="outcome" value="Walked"> Walked</label>
       <label><input type="radio" name="outcome" value="Did not walk"> Did not walk</label>
-      <label><input type="radio" name="outcome" value="Not yet answered"> Not yet answered</label>
     </fieldset>
     <button type="button" onclick="submitOutcome('${testId}', '${testData.room}', '${testData.date}', ${testData.leftLegStrength}, ${testData.rightLegStrength})">Submit</button>
     <button type="button" onclick="deleteTest('${testId}')">Delete</button>
