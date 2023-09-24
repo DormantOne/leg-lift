@@ -73,16 +73,7 @@ let testsListener = null;  // Add this
       e.target.reset();
     });
 
-// Listening for changes in 'outcomes' collection
-db.collection('outcomes').onSnapshot((querySnapshot) => {
-  // Clear existing data
-  document.getElementById('dataList').innerHTML = '';
 
-  // Display new data
-  querySnapshot.forEach((doc) => {
-    displayOutcomeData(doc);
-  });
-});
 
 // Function to display test data along with the associated outcome
 function displayTestData(doc) {
@@ -111,6 +102,8 @@ function displayOutcomeData(doc) {
 }
 
     
+
+// ... (earlier code)
 
 function populateOutcomesSection() {
   // Detach the previous listener for 'tests' if it exists
@@ -144,17 +137,7 @@ function populateOutcomesSection() {
   });
 }
 
-  // Attach a new listener for 'outcomes' and store the unsubscribe function
-  outcomesListener = db.collection('outcomes').onSnapshot((querySnapshot) => {
-    // Clear existing data
-    document.getElementById('dataList').innerHTML = '';
 
-    // Display new data
-    querySnapshot.forEach((doc) => {
-      displayOutcomeData(doc);
-    });
-  });
-}
 
 
 function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
