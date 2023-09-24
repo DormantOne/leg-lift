@@ -47,7 +47,7 @@
   <!-- Place the button where you want it -->
   <button onclick="fetchDataAndPerformStatistics(); fetchLatestStatistics();">Calculate Correlation</button>
 
-  <!-- Place the button where you want it -->
+<!-- Place the button where you want it -->
 <button onclick="fetchLatestStatistics()">Fetch Latest Statistics</button>
 
   <!-- A div to potentially display the results -->
@@ -102,42 +102,32 @@
     });
 
 function fetchLatestStatistics() {
-  db.collection('statistics').orderBy('timestamp', 'desc').limit(1).get().then((querySnapshot) => {
+  // Fetch all statistics and populate the table
+  db.collection('statistics').orderBy('timestamp', 'desc').get().then((querySnapshot) => {
     const statsOutputDiv = document.getElementById("statisticsOutput");
-    statsOutputDiv.innerHTML = ''; // Clear previous data
+    statsOutputDiv.innerHTML = '<table><thead><tr><th>Total Data Points</th><th>Correlation</th><th>ID</th></tr></thead><tbody></tbody></table>';
+    const tableBody = statsOutputDiv.querySelector('tbody');
+    
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      statsOutputDiv.innerHTML += `
-        <table>
-          <thead>
-            <tr>
-              <th>Total Data Points</th>
-              <th>Correlation</th>
-              <th>ID</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>${data.totalDataPoints}</td>
-              <td>${data.correlation}</td>
-              <td>${doc.id}</td>
-            </tr>
-          </tbody>
-        </table>
+      tableBody.innerHTML += `
+        <tr>
+          <td>${data.totalDataPoints}</td>
+          <td>${data.correlation}</td>
+          <td>${doc.id}</td>
+        </tr>
       `;
     });
   });
-
-  // Check if there are new data points in 'outcomes' collection
-  db.collection('outcomes').get().then((querySnapshot) => {
-    const currentDataPoints = querySnapshot.size;
-    if (currentDataPoints > lastKnownDataPoints) {
-      // There is new data to correlate
-      console.log("New data available for correlation.");
-      // Add a visual indicator in the HTML here, if you wish
-    }
+  
+  // Count and return remaining test data that have no outcome yet
+  db.collection('tests').get().then((querySnapshot) => {
+    const remainingTests = querySnapshot.size;
+    const statsOutputDiv = document.getElementById("statisticsOutput");
+    statsOutputDiv.innerHTML += `<p>Remaining tests without outcomes: ${remainingTests}</p>`;
   });
 }
+
 
 // Function to add test data
 function addTestData(roomNumber, date, leftLegStrength, rightLegStrength) {
