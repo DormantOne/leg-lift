@@ -126,36 +126,40 @@ function addTestData(roomNumber, date, leftLegStrength, rightLegStrength) {
         let li = document.createElement('li');
         li.textContent = `Room: ${data.room}, Date: ${data.date}, Left Leg Strength: ${data.leftLegStrength}, Right Leg Strength: ${data.rightLegStrength}`;
         
-        // Add Outcome Button
-        let outcomeButton = document.createElement('button');
-        outcomeButton.textContent = 'Add Outcome';
-        outcomeButton.onclick = function() {
-          addOutcome(doc.id, data);
-        };
+    // Add Outcome Button
+    let outcomeButton = document.createElement('button');
+    outcomeButton.id = `addOutcomeButton-${doc.id}`;  // Add this line for the button id
+    outcomeButton.textContent = 'Add Outcome';
+    outcomeButton.onclick = function() {
+      addOutcome(doc.id, data);
+    };
         
         li.appendChild(outcomeButton);
         dataList.appendChild(li);
       });
     });
 
-    // Function to display the outcome questionnaire
-    function addOutcome(testId, testData) {
-      const outcomesDiv = document.getElementById('outcomesSection');
+// Function to display the outcome questionnaire
+function addOutcome(testId, testData) {
+  const outcomesDiv = document.getElementById('outcomesSection');
 
-      let outcomeForm = document.createElement('form');
-      outcomeForm.id = `outcomeForm-${testId}`;
-      outcomeForm.innerHTML = `
-        <fieldset>
-          <legend>Outcome for Room: ${testData.room}, Date: ${testData.date}</legend>
-          <label><input type="radio" name="outcome" value="Walked"> Walked</label>
-          <label><input type="radio" name="outcome" value="Did not walk"> Did not walk</label>
-          <label><input type="radio" name="outcome" value="Not yet answered"> Not yet answered</label>
-        </fieldset>
-        <button type="button" onclick="submitOutcome('${testId}', '${testData.room}', '${testData.date}', ${testData.leftLegStrength}, ${testData.rightLegStrength})">Submit</button>
-        <button type="button" onclick="deleteTest('${testId}')">Delete</button>
-      `;
-      outcomesDiv.appendChild(outcomeForm);
-    }
+  // Disable the "Add Outcome" button to prevent multiple clicks
+  document.querySelector(`#addOutcomeButton-${testId}`).disabled = true;
+
+  let outcomeForm = document.createElement('form');
+  outcomeForm.id = `outcomeForm-${testId}`;
+  outcomeForm.innerHTML = `
+    <fieldset>
+      <legend>Outcome for Room: ${testData.room}, Date: ${testData.date}</legend>
+      <label><input type="radio" name="outcome" value="Walked"> Walked</label>
+      <label><input type="radio" name="outcome" value="Did not walk"> Did not walk</label>
+      <label><input type="radio" name="outcome" value="Not yet answered"> Not yet answered</label>
+    </fieldset>
+    <button type="button" onclick="submitOutcome('${testId}', '${testData.room}', '${testData.date}', ${testData.leftLegStrength}, ${testData.rightLegStrength})">Submit</button>
+    <button type="button" onclick="deleteTest('${testId}')">Delete</button>
+  `;
+  outcomesDiv.appendChild(outcomeForm);
+}
 
     // Function to submit the outcome
     function submitOutcome(testId, room, date, leftLegStrength, rightLegStrength) {
