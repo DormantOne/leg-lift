@@ -45,7 +45,7 @@
   </div>
 
   <!-- Place the button where you want it -->
-  <button onclick="fetchDataAndPerformStatistics()">Calculate Correlation</button>
+  <button onclick="fetchDataAndPerformStatistics(); fetchLatestStatistics();">Calculate Correlation</button>
 
   <!-- A div to potentially display the results -->
   <div id="statisticsOutput"></div>
@@ -63,6 +63,8 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+
+    let lastKnownDataPoints = 0;  // Initialize with zero
 
     // Form submit event listener
     document.getElementById('testForm').addEventListener('submit', function(e) {
@@ -95,6 +97,44 @@
           }
         });
     });
+
+function fetchLatestStatistics() {
+  db.collection('statistics').orderBy('timestamp', 'desc').limit(1).get().then((querySnapshot) => {
+    const statsOutputDiv = document.getElementById("statisticsOutput");
+    statsOutputDiv.innerHTML = ''; // Clear previous data
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      statsOutputDiv.innerHTML += `
+        <table>
+          <thead>
+            <tr>
+              <th>Total Data Points</th>
+              <th>Correlation</th>
+              <th>ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>${data.totalDataPoints}</td>
+              <td>${data.correlation}</td>
+              <td>${doc.id}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+    });
+  });
+
+  // Check if there are new data points in 'outcomes' collection
+  db.collection('outcomes').get().then((querySnapshot) => {
+    const currentDataPoints = querySnapshot.size;
+    if (currentDataPoints > lastKnownDataPoints) {
+      // There is new data to correlate
+      console.log("New data available for correlation.");
+      // Add a visual indicator in the HTML here, if you wish
+    }
+  });
+}
 
 // Function to add test data
 function addTestData(roomNumber, date, leftLegStrength, rightLegStrength) {
