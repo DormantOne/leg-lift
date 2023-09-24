@@ -82,19 +82,21 @@
         });
     });
 
- // Function to add test data
-    function addTestData(roomNumber, date, leftLegStrength, rightLegStrength) {
-      db.collection('tests').add({
-        date: date,
-        room: roomNumber,
-        leftLegStrength: leftLegStrength,
-        rightLegStrength: rightLegStrength
-      }).then(() => {
-        console.log("Data successfully written.");
-      }).catch((error) => {
-        console.error("Error writing data: ", error);
-      });
-    }
+// Function to add test data
+function addTestData(roomNumber, date, leftLegStrength, rightLegStrength) {
+  db.collection('tests').add({
+    date: date,
+    room: roomNumber,
+    leftLegStrength: leftLegStrength,
+    rightLegStrength: rightLegStrength,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    console.log("Data successfully written.");
+  }).catch((error) => {
+    console.error("Error writing data: ", error);
+  });
+}
+
 
 // Function to clear the form fields
   document.getElementById('clearForm').addEventListener('click', function() {
@@ -109,17 +111,19 @@
     rightLegRadios.forEach((radio) => { radio.checked = false; });
   });
 
-    // Display stored data
-    db.collection('tests').onSnapshot((querySnapshot) => {
-      const dataList = document.getElementById('dataList');
-      dataList.innerHTML = ''; // Clear previous entries
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        let li = document.createElement('li');
-        li.textContent = `Room: ${data.room}, Date: ${data.date}, Left Leg Strength: ${data.leftLegStrength}, Right Leg Strength: ${data.rightLegStrength}`;
-        dataList.appendChild(li);
-      });
-    });
+// Display stored data
+db.collection('tests').onSnapshot((querySnapshot) => {
+  const dataList = document.getElementById('dataList');
+  dataList.innerHTML = ''; // Clear previous entries
+  querySnapshot.forEach((doc) => {
+    const data = doc.data();
+    const timestamp = data.timestamp ? data.timestamp.toDate().toLocaleString() : 'N/A';
+    let li = document.createElement('li');
+    li.textContent = `Room: ${data.room}, Date: ${data.date}, Timestamp: ${timestamp}, Left Leg Strength: ${data.leftLegStrength}, Right Leg Strength: ${data.rightLegStrength}`;
+    dataList.appendChild(li);
+  });
+});
+
   </script>
 </body>
 </html>
