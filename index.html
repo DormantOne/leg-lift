@@ -27,6 +27,9 @@
     <input type="submit" value="Submit">
   </form>
 
+  <!-- Clear Data Button -->
+  <button id="clearData">Clear All Data</button>
+
   <!-- Data Display -->
   <div id="dataDisplay">
     <h2>Stored Data</h2>
@@ -50,24 +53,59 @@
     // Form submit event listener
     document.getElementById('testForm').addEventListener('submit', function(e) {
       e.preventDefault();
+
+      // Validate input
       const roomNumber = document.getElementById('roomNumber').value;
-      const leftLegStrength = document.querySelector('input[name="leftLeg"]:checked').value;
-      const rightLegStrength = document.querySelector('input[name="rightLeg"]:checked').value;
+      const leftLegStrength = document.querySelector('input[name="leftLeg"]:checked');
+      const rightLegStrength = document.querySelector('input[name="rightLeg"]:checked');
 
-      const timestamp = new Date().toISOString();
+      if (!roomNumber || !leftLegStrength || !rightLegStrength) {
+        alert("Please fill out all fields.");
+        return;
+      }
 
-      // Adding data to Firestore
+      const date = new Date().toISOString().split('T')[0];
+
+      // Check for duplicate entries based on room and date
+      db.collection('tests').where('date', '==', date).where('room', '==', roomNumber).get()
+        .then((querySnapshot) => {
+          if (!querySnapshot.empty) {
+            if (confirm('Data already exists for this room and date. Overwrite?')) {
+              querySnapshot.forEach((doc) => {
+                doc.ref.delete();
+              });
+              addTestData(roomNumber, date, leftLegStrength.value, rightLegStrength.value);
+            }
+          } else {
+            addTestData(roomNumber, date, leftLegStrength.value, rightLegStrength.value);
+          }
+        });
+    });
+
+ // Function to add test data
+    function addTestData(roomNumber, date, leftLegStrength, rightLegStrength) {
       db.collection('tests').add({
-        timestamp: timestamp,
-        date: timestamp.split('T')[0],
+        date: date,
         room: roomNumber,
         leftLegStrength: leftLegStrength,
         rightLegStrength: rightLegStrength
-      }).then((docRef) => {
-        console.log("Document written with ID: ", docRef.id);
+      }).then(() => {
+        console.log("Data successfully written.");
       }).catch((error) => {
-        console.error("Error adding document: ", error);
+        console.error("Error writing data: ", error);
       });
+    }
+
+    // Function to clear all data
+    document.getElementById('clearData').addEventListener('click', function() {
+      if (confirm('Are you sure you want to clear all data?')) {
+        db.collection('tests').get().then((querySnapshot) => {
+          querySnapshot.forEach((doc) => {
+            doc.ref.delete();
+          });
+          alert("All data cleared.");
+        });
+      }
     });
 
     // Display stored data
