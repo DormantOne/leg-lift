@@ -132,20 +132,21 @@ function displayOutcomeData(doc) {
 function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
   console.log("createOutcomeDiv called with outcomeDocId:", outcomeDocId);  // Debugging line
   
+  // Define the Firestore document reference for the test document here
+  const testDocRef = db.collection('tests').doc(testDocId);
+  
   let div = document.createElement('div');
   div.innerHTML = `
     <span>Room: ${room}, Test Date: ${date}</span>
     <input type="radio" name="outcome-${room}" value="Not Yet Answered" checked> Not Yet Answered
     <input type="radio" name="outcome-${room}" value="Walk"> Walk
     <input type="radio" name="outcome-${room}" value="Not Walked"> Not Walked
-
-<button onclick="submitOutcome('${room}', '${outcomeDocId}', testDocRef)">Submit Outcome</button>
-
-
+    <button onclick="submitOutcome('${room}', '${outcomeDocId}', '${testDocId}')">Submit Outcome</button>  <!-- Pass testDocId -->
     <button onclick="deleteTest('${testDocId}', '${room}')">Delete from Database</button>
   `;
   document.getElementById('outcomesSection').appendChild(div);
 }
+
 
 
 async function submitOutcome(room, outcomeDocId, testDocRef) {
