@@ -27,12 +27,6 @@
     <input type="submit" value="Submit">
   </form>
 
-  <!-- Outcome Section -->
-  <div id="outcomesSection">
-    <h2>Outcomes</h2>
-    <!-- Outcomes will be populated here -->
-  </div>
-
   <!-- Data Display -->
   <div id="dataDisplay">
     <h2>Stored Data</h2>
@@ -40,6 +34,7 @@
   </div>
 
   <script>
+    // Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyCCY8_z-0C0RCQUp9brvM0hFMd7VsrjSXo",
       authDomain: "leg-lift.firebaseapp.com",
@@ -52,160 +47,40 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-document.getElementById('testForm').addEventListener('submit', function(e) {
-  e.preventDefault();
-  if (!document.querySelector('input[name="leftLeg"]:checked') || !document.querySelector('input[name="rightLeg"]:checked')) {
-  alert("Please select strength values for both legs.");
-  return;
-}
+    // Form submit event listener
+    document.getElementById('testForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const roomNumber = document.getElementById('roomNumber').value;
+      const leftLegStrength = document.querySelector('input[name="leftLeg"]:checked').value;
+      const rightLegStrength = document.querySelector('input[name="rightLeg"]:checked').value;
 
-  const roomNumber = document.getElementById('roomNumber').value;
-  const leftLegStrength = document.querySelector('input[name="leftLeg"]:checked').value;
-  const rightLegStrength = document.querySelector('input[name="rightLeg"]:checked').value;
-  
-  // Capture Timestamp
-  const testTimestamp = new Date().toISOString();
-  const testDate = testTimestamp.split('T')[0];
+      const timestamp = new Date().toISOString();
 
-  // First, check if a test for the same room and date already exists
-  db.collection('tests').where('room', '==', roomNumber).where('date', '==', testDate).get().then((querySnapshot) => {
-    // If such a test exists, delete it
-    if (!querySnapshot.empty) {
+      // Adding data to Firestore
+      db.collection('tests').add({
+        timestamp: timestamp,
+        date: timestamp.split('T')[0],
+        room: roomNumber,
+        leftLegStrength: leftLegStrength,
+        rightLegStrength: rightLegStrength
+      }).then((docRef) => {
+        console.log("Document written with ID: ", docRef.id);
+      }).catch((error) => {
+        console.error("Error adding document: ", error);
+      });
+    });
+
+    // Display stored data
+    db.collection('tests').onSnapshot((querySnapshot) => {
+      const dataList = document.getElementById('dataList');
+      dataList.innerHTML = ''; // Clear previous entries
       querySnapshot.forEach((doc) => {
-        doc.ref.delete();
-      });
-    }
-    // Add the new test data
-    return db.collection('tests').add({
-      date: testDate,
-      time: testTimestamp.split('T')[1].split('.')[0], // Time without milliseconds
-      room: roomNumber,
-      leftLegStrength: leftLegStrength,
-      rightLegStrength: rightLegStrength
-    });
-  }).then((docRef) => {
-    populateOutcomesSection(docRef.id, testTimestamp, leftLegStrength, rightLegStrength); // Pass new variables
-  }).catch((error) => {
-    console.error("Error handling test data: ", error);
-  });
-});
-
-
-
-
-    function displayTestData(doc) {
-      let li = document.createElement('li');
-      li.textContent = `Test Data: Date: ${doc.data().date}, Room: ${doc.data().room}, Left Leg Strength: ${doc.data().leftLegStrength}, Right Leg Strength: ${doc.data().rightLegStrength}`;
-      document.getElementById('dataList').appendChild(li);
-    }
-
-function displayOutcomeData(doc) {
-  let li = document.createElement('li');
-  li.textContent = `Outcome Data: ID: ${doc.id}, Date: ${doc.data().date}, Room: ${doc.data().room}, Outcome: ${doc.data().outcome}`;
-  document.getElementById('dataList').appendChild(li);
-}
-
-
-    db.collection('outcomes').onSnapshot((querySnapshot) => {
-      querySnapshot.forEach((doc) => {
-        displayOutcomeData(doc);
+        const data = doc.data();
+        let li = document.createElement('li');
+        li.textContent = `Room: ${data.room}, Date: ${data.date}, Left Leg Strength: ${data.leftLegStrength}, Right Leg Strength: ${data.rightLegStrength}`;
+        dataList.appendChild(li);
       });
     });
-
-
-function populateOutcomesSection(testDocId = null, testTimestamp = null, leftLegStrength = null, rightLegStrength = null) {
-  document.getElementById('outcomesSection').innerHTML = "<h2>Outcomes</h2>";  // Clear previous entries
-  db.collection('tests').get().then((testSnapshot) => {
-    testSnapshot.forEach((testDoc) => {
-      const room = testDoc.data().room;
-      const date = testDoc.data().date;
-      db.collection('outcomes').where('room', '==', room).get().then((outcomeSnapshot) => {
-        if (outcomeSnapshot.empty) {
-          createOutcomeDiv(room, date, testDoc.id, null, testTimestamp, leftLegStrength, rightLegStrength);  // Pass new variables
-        } else {
-          outcomeSnapshot.forEach((outcomeDoc) => {
-            if (outcomeDoc.data().outcome === "Not Yet Answered") {
-              createOutcomeDiv(room, date, testDoc.id, outcomeDoc.id, testTimestamp, leftLegStrength, rightLegStrength);  // Pass new variables
-            }
-          });
-        }
-      });
-    });
-  });
-}
-
-
-function createOutcomeDiv(room, date, testDocId, outcomeDocId = null, testTimestamp = null, leftLegStrength = null, rightLegStrength = null) {
-  console.log("createOutcomeDiv called with outcomeDocId:", outcomeDocId);  // Debugging line
-  
-  let div = document.createElement('div');
-  div.innerHTML = `
-    <span>Room: ${room}, Test Date: ${date}</span>
-    <input type="radio" name="outcome-${room}" value="Not Yet Answered" checked> Not Yet Answered
-    <input type="radio" name="outcome-${room}" value="Walk"> Walk
-    <input type="radio" name="outcome-${room}" value="Not Walked"> Not Walked
-    <button onclick="submitOutcome('${room}', '${outcomeDocId}', '${testDocId}', '${testTimestamp}', ${leftLegStrength}, ${rightLegStrength})">Submit Outcome</button>
-    <button onclick="deleteTest('${testDocId}', '${room}')">Delete from Database</button>
-  `;
-  document.getElementById('outcomesSection').appendChild(div);
-}
-
-
-
-function submitOutcome(room, outcomeDocId, testDocId = null, testTimestamp = null, leftLegStrength = null, rightLegStrength = null) {
-  console.log("submitOutcome called with outcomeDocId:", outcomeDocId);  // Debugging line
-
-  const outcomeTimestamp = new Date().toISOString();
-  const outcome = document.querySelector(`input[name="outcome-${room}"]:checked`).value;
-
-  // Define the outcome data
-  const outcomeData = {
-    date: outcomeTimestamp.split('T')[0],
-    time: outcomeTimestamp.split('T')[1].split('.')[0], // Time without milliseconds
-    room: room,
-    outcome: outcome
-  };
-
-  // If extra test data is available, add it to the outcome data
-  if (testDocId && testTimestamp && leftLegStrength && rightLegStrength) {
-    outcomeData['testId'] = testDocId;
-    outcomeData['testTimestamp'] = testTimestamp;
-    outcomeData['totalScore'] = parseInt(leftLegStrength) + parseInt(rightLegStrength);
-  }
-
-  // Using a Firestore transaction to handle database operations atomically
-  return db.runTransaction((transaction) => {
-    return transaction.get(db.collection('outcomes').where('room', '==', room).where('date', '==', outcomeData.date)).then((snapshot) => {
-      if (!snapshot.empty) {
-        snapshot.forEach((doc) => {
-          transaction.update(doc.ref, outcomeData);
-        });
-      } else {
-        transaction.set(db.collection('outcomes').doc(), outcomeData);
-      }
-    });
-  }).then(() => {
-    console.log("Transaction successfully committed!");
-    populateOutcomesSection();
-  }).catch((error) => {
-    console.error("Transaction failed: ", error);
-  });
-}
-
-
-
-// Updated deleteTest function
-function deleteTest(testDocId, room) {  // Pass room as an argument
-  db.collection('tests').doc(testDocId).delete().then(() => {
-    // Do not delete outcomes here, just refresh the outcomes section
-    populateOutcomesSection();  // Refresh outcomes section
-  });
-}
-
-
-
-    populateOutcomesSection();
-
   </script>
 </body>
 </html>
