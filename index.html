@@ -116,39 +116,33 @@ function populateOutcomesSection() {
   // Detach the previous listener for 'tests' if it exists
   if (testsListener) {
     testsListener();
+    testsListener = null;
   }
 
   // Detach the previous listener for 'outcomes' if it exists
   if (outcomesListener) {
     outcomesListener();
+    outcomesListener = null;
   }
 
   // Clear previous entries
   document.getElementById('outcomesSection').innerHTML = "<h2>Outcomes</h2>";  
+  document.getElementById('dataList').innerHTML = '';
 
   // Attach a new listener for 'tests' and store the unsubscribe function
   testsListener = db.collection('tests').onSnapshot((testSnapshot) => {
-    // Clear existing data in dataList
-    document.getElementById('dataList').innerHTML = '';
-
     testSnapshot.forEach((testDoc) => {
       displayTestData(testDoc);
-
-      const room = testDoc.data().room;
-      const date = testDoc.data().date;
-      db.collection('outcomes').where('room', '==', room).get().then((outcomeSnapshot) => {
-        if (outcomeSnapshot.empty) {
-          createOutcomeDiv(room, date, testDoc.id);
-        } else {
-          outcomeSnapshot.forEach((outcomeDoc) => {
-            if (outcomeDoc.data().outcome === "Not Yet Answered") {
-              createOutcomeDiv(room, date, testDoc.id, outcomeDoc.id);
-            }
-          });
-        }
-      });
     });
   });
+
+  // Attach a new listener for 'outcomes' and store the unsubscribe function
+  outcomesListener = db.collection('outcomes').onSnapshot((querySnapshot) => {
+    querySnapshot.forEach((doc) => {
+      displayOutcomeData(doc);
+    });
+  });
+}
 
   // Attach a new listener for 'outcomes' and store the unsubscribe function
   outcomesListener = db.collection('outcomes').onSnapshot((querySnapshot) => {
