@@ -52,35 +52,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let outcomesListener = null;
-let testsListener = null;  // Add this
-
-     // ★ Initialize once when the page loads
-    function init() {
-      // ★ Attach listeners here
-      db.collection('tests').onSnapshot((testSnapshot) => {
-        // Clear previous entries
-        document.getElementById('dataList').innerHTML = '';
-        testSnapshot.forEach((testDoc) => {
-          displayTestData(testDoc);
-        });
-      });
-
-      // ★ Attach new listener for 'outcomes' 
-      db.collection('outcomes').onSnapshot((querySnapshot) => {
-        // Clear previous entries in outcomes section
-        document.getElementById('outcomesSection').innerHTML = '<h2>Outcomes</h2>';
-        querySnapshot.forEach((doc) => {
-          createOutcomeDiv(doc.data().room, doc.data().date, doc.data().testId, doc.id);
-        });
-      });
-    }
-
-    // ★ Call this function when the page loads
-    window.addEventListener('load', (event) => {
-      init();
-    });
-    
     document.getElementById('testForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const roomNumber = document.getElementById('roomNumber').value;
@@ -94,66 +65,51 @@ let testsListener = null;  // Add this
      }).then(() => {
         populateOutcomesSection();  // Trigger after a new test is added
       });
-      // Reset the form fields
-      e.target.reset();
     });
 
 
 
-// Function to display test data along with the associated outcome
-function displayTestData(doc) {
-  let li = document.createElement('li');
-  const room = doc.data().room;
-  const date = doc.data().date;
-  const testDocId = doc.id;  // Assume doc.id contains the document ID of the test
-
-  // Fetch the associated outcome based on the room
-  db.collection('outcomes').where('room', '==', room).get().then((outcomeSnapshot) => {
-    let outcomeText = 'Not Yet Answered'; // Default value if no outcome is found
-    let outcomeDocId = null;  // To store the document ID of the outcome
-
-    if (!outcomeSnapshot.empty) {
-      outcomeSnapshot.forEach((outcomeDoc) => {
-        outcomeText = outcomeDoc.data().outcome;
-        outcomeDocId = outcomeDoc.id;  // Store the document ID
-      });
-    } else {
-      // If no outcome exists, create a default one
-      db.collection('outcomes').add({
-        date: date,  // You can adjust this
-        room: room,
-        outcome: 'Not Yet Answered',
-        testId: testDocId  // Link it to the test
-      }).then((docRef) => {
-        outcomeDocId = docRef.id;  // Store the newly created document ID
-      }).catch((error) => {
-        console.error("Error adding default outcome: ", error);
-      });
+    function displayTestData(doc) {
+      let li = document.createElement('li');
+      li.textContent = `Test Data: Date: ${doc.data().date}, Room: ${doc.data().room}, Left Leg Strength: ${doc.data().leftLegStrength}, Right Leg Strength: ${doc.data().rightLegStrength}`;
+      document.getElementById('dataList').appendChild(li);
     }
 
-    // Now append the outcome to the list item text
-    li.textContent = `Test Data: Date: ${date}, Room: ${room}, Left Leg Strength: ${doc.data().leftLegStrength}, Right Leg Strength: ${doc.data().rightLegStrength}, Outcome: ${outcomeText}`;
-    document.getElementById('dataList').appendChild(li);
-
-    // If you want, you can also create UI elements to update the outcome here,
-    // using the outcomeDocId and testDocId
-  });
-}
-
-
-
-
-
 function displayOutcomeData(doc) {
-  console.log("Modifying DOM to display outcomes");  // Debugging line
   let li = document.createElement('li');
   li.textContent = `Outcome Data: ID: ${doc.id}, Date: ${doc.data().date}, Room: ${doc.data().room}, Outcome: ${doc.data().outcome}`;
   document.getElementById('dataList').appendChild(li);
 }
 
 
+    db.collection('outcomes').onSnapshot((querySnapshot) => {
+      querySnapshot.forEach((doc) => {
+        displayOutcomeData(doc);
+      });
+    });
 
 
+    // Updated populateOutcomesSection
+  function populateOutcomesSection() {
+    document.getElementById('outcomesSection').innerHTML = "<h2>Outcomes</h2>";  // Clear previous entries
+    db.collection('tests').get().then((testSnapshot) => {
+      testSnapshot.forEach((testDoc) => {
+        const room = testDoc.data().room;
+        const date = testDoc.data().date;
+        db.collection('outcomes').where('room', '==', room).get().then((outcomeSnapshot) => {
+          if (outcomeSnapshot.empty) {
+            createOutcomeDiv(room, date, testDoc.id);
+          } else {
+            outcomeSnapshot.forEach((outcomeDoc) => {
+              if (outcomeDoc.data().outcome === "Not Yet Answered") {
+                createOutcomeDiv(room, date, testDoc.id, outcomeDoc.id);
+              }
+            });
+          }
+        });
+      });
+    });
+  }
 
 function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
   console.log("createOutcomeDiv called with outcomeDocId:", outcomeDocId);  // Debugging line
@@ -164,26 +120,27 @@ function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
     <input type="radio" name="outcome-${room}" value="Not Yet Answered" checked> Not Yet Answered
     <input type="radio" name="outcome-${room}" value="Walk"> Walk
     <input type="radio" name="outcome-${room}" value="Not Walked"> Not Walked
-    <button onclick="submitOutcome('${room}', '${outcomeDocId}', '${testDocId}')">Submit Outcome</button>
+    <button onclick="submitOutcome('${room}', '${outcomeDocId}')">Submit Outcome</button>
     <button onclick="deleteTest('${testDocId}', '${room}')">Delete from Database</button>
   `;
   document.getElementById('outcomesSection').appendChild(div);
 }
 
-// Updated Submit Outcome Function
-function submitOutcome(room, outcomeDocId, testDocId) {  // Add 'testDocId' as a new parameter
+
+
+function submitOutcome(room, outcomeDocId) {
+  console.log("submitOutcome called with outcomeDocId:", outcomeDocId);  // Debugging line
+  
   const outcome = document.querySelector(`input[name="outcome-${room}"]:checked`).value;
-  if (outcomeDocId && outcomeDocId !== 'null') {
+  if (outcomeDocId && outcomeDocId !== 'null') {  // Add additional null check
     db.collection('outcomes').doc(outcomeDocId).update({
       date: new Date().toISOString().split('T')[0],
-      outcome: outcome,
-      testId: testDocId  // Add this line
+      outcome: outcome
     }).then(() => {
-      // Only delete the outcome if it's reset to "Not Yet Answered"
-      if (outcome === "Not Yet Answered") {
+      if (outcome !== "Not Yet Answered" && outcomeDocId) {
         db.collection('outcomes').doc(outcomeDocId).delete();
       }
-      populateOutcomesSection();  // This line can be removed if you are using listeners
+      populateOutcomesSection();
     }).catch((error) => {
       console.error("Error updating document: ", error);
     });
@@ -191,16 +148,17 @@ function submitOutcome(room, outcomeDocId, testDocId) {  // Add 'testDocId' as a
     db.collection('outcomes').add({
       date: new Date().toISOString().split('T')[0],
       room: room,
-      outcome: outcome,
-      testId: testDocId  // Add this line
+      outcome: outcome
     }).then(() => {
-      populateOutcomesSection();  // This line can be removed if you are using listeners
+      if (outcome !== "Not Yet Answered") {
+        db.collection('outcomes').doc(outcomeDocId).delete();
+      }
+      populateOutcomesSection();
     }).catch((error) => {
       console.error("Error adding document: ", error);
     });
   }
 }
-
 
 // Updated deleteTest function
 function deleteTest(testDocId, room) {  // Pass room as an argument
@@ -215,7 +173,7 @@ function deleteTest(testDocId, room) {  // Pass room as an argument
 }
 
 
-  
+    populateOutcomesSection();
 
   </script>
 </body>
