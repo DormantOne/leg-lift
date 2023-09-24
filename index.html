@@ -27,8 +27,8 @@
     <input type="submit" value="Submit">
   </form>
 
-  <!-- Clear Data Button -->
-  <button id="clearData">Clear All Data</button>
+  <!-- Clear form Button -->
+    <button id="clearForm">Clear Form</button>
 
   <!-- Data Display -->
   <div id="dataDisplay">
@@ -96,17 +96,18 @@
       });
     }
 
-    // Function to clear all data
-    document.getElementById('clearData').addEventListener('click', function() {
-      if (confirm('Are you sure you want to clear all data?')) {
-        db.collection('tests').get().then((querySnapshot) => {
-          querySnapshot.forEach((doc) => {
-            doc.ref.delete();
-          });
-          alert("All data cleared.");
-        });
-      }
-    });
+// Function to clear the form fields
+  document.getElementById('clearForm').addEventListener('click', function() {
+    // Clear the room number field
+    document.getElementById('roomNumber').value = '';
+    
+    // Clear the radio buttons for left leg and right leg
+    const leftLegRadios = document.querySelectorAll('input[name="leftLeg"]');
+    const rightLegRadios = document.querySelectorAll('input[name="rightLeg"]');
+    
+    leftLegRadios.forEach((radio) => { radio.checked = false; });
+    rightLegRadios.forEach((radio) => { radio.checked = false; });
+  });
 
     // Display stored data
     db.collection('tests').onSnapshot((querySnapshot) => {
