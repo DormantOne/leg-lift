@@ -128,35 +128,35 @@ function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
 
 
 
-function submitOutcome(room, outcomeDocId) {
+async function submitOutcome(room, outcomeDocId) {
   console.log("submitOutcome called with outcomeDocId:", outcomeDocId);  // Debugging line
-  
+
   const outcome = document.querySelector(`input[name="outcome-${room}"]:checked`).value;
-  if (outcomeDocId && outcomeDocId !== 'null') {  // Add additional null check
-    db.collection('outcomes').doc(outcomeDocId).update({
-      date: new Date().toISOString().split('T')[0],
-      outcome: outcome
-    }).then(() => {
-      if (outcome !== "Not Yet Answered" && outcomeDocId) {
-        db.collection('outcomes').doc(outcomeDocId).delete();
-      }
-      populateOutcomesSection();
-    }).catch((error) => {
-      console.error("Error updating document: ", error);
-    });
-  } else {
-    db.collection('outcomes').add({
-      date: new Date().toISOString().split('T')[0],
-      room: room,
-      outcome: outcome
-    }).then(() => {
+
+  try {
+    if (outcomeDocId && outcomeDocId !== 'null') {
+      // Update existing outcome
+      await db.collection('outcomes').doc(outcomeDocId).update({
+        date: firebase.firestore.Timestamp.now(),
+        outcome: outcome
+      });
+
       if (outcome !== "Not Yet Answered") {
-        db.collection('outcomes').doc(outcomeDocId).delete();
+        await db.collection('outcomes').doc(outcomeDocId).delete();
       }
-      populateOutcomesSection();
-    }).catch((error) => {
-      console.error("Error adding document: ", error);
-    });
+    } else {
+      // Add a new outcome
+      await db.collection('outcomes').add({
+        date: firebase.firestore.Timestamp.now(),
+        room: room,
+        outcome: outcome
+      });
+    }
+
+    // After updating or adding the outcome, refresh the outcomes section
+    await populateOutcomesSection();
+  } catch (error) {
+    console.error("Error updating or adding document: ", error);
   }
 }
 
