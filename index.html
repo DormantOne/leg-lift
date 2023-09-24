@@ -52,24 +52,44 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    document.getElementById('testForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const roomNumber = document.getElementById('roomNumber').value;
-      const leftLegStrength = document.querySelector('input[name="leftLeg"]:checked').value;
-      const rightLegStrength = document.querySelector('input[name="rightLeg"]:checked').value;
-      // Capture Timestamp
-      const testTimestamp = new Date().toISOString();
-      // Add to Firestore
-      db.collection('tests').add({
-        date: testTimestamp.split('T')[0],
-        time: testTimestamp.split('T')[1].split('.')[0], // Time without milliseconds
-        room: roomNumber,
-        leftLegStrength: leftLegStrength,
-        rightLegStrength: rightLegStrength
-      }).then((docRef) => {
-        populateOutcomesSection(docRef.id, testTimestamp, leftLegStrength, rightLegStrength); // Pass new variables
+document.getElementById('testForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  if (!document.querySelector('input[name="leftLeg"]:checked') || !document.querySelector('input[name="rightLeg"]:checked')) {
+  alert("Please select strength values for both legs.");
+  return;
+}
+
+  const roomNumber = document.getElementById('roomNumber').value;
+  const leftLegStrength = document.querySelector('input[name="leftLeg"]:checked').value;
+  const rightLegStrength = document.querySelector('input[name="rightLeg"]:checked').value;
+  
+  // Capture Timestamp
+  const testTimestamp = new Date().toISOString();
+  const testDate = testTimestamp.split('T')[0];
+
+  // First, check if a test for the same room and date already exists
+  db.collection('tests').where('room', '==', roomNumber).where('date', '==', testDate).get().then((querySnapshot) => {
+    // If such a test exists, delete it
+    if (!querySnapshot.empty) {
+      querySnapshot.forEach((doc) => {
+        doc.ref.delete();
       });
+    }
+    // Add the new test data
+    return db.collection('tests').add({
+      date: testDate,
+      time: testTimestamp.split('T')[1].split('.')[0], // Time without milliseconds
+      room: roomNumber,
+      leftLegStrength: leftLegStrength,
+      rightLegStrength: rightLegStrength
     });
+  }).then((docRef) => {
+    populateOutcomesSection(docRef.id, testTimestamp, leftLegStrength, rightLegStrength); // Pass new variables
+  }).catch((error) => {
+    console.error("Error handling test data: ", error);
+  });
+});
+
 
 
 
@@ -134,11 +154,11 @@ function createOutcomeDiv(room, date, testDocId, outcomeDocId = null, testTimest
 
 function submitOutcome(room, outcomeDocId, testDocId = null, testTimestamp = null, leftLegStrength = null, rightLegStrength = null) {
   console.log("submitOutcome called with outcomeDocId:", outcomeDocId);  // Debugging line
-  
+
   const outcomeTimestamp = new Date().toISOString();
   const outcome = document.querySelector(`input[name="outcome-${room}"]:checked`).value;
 
-  // Common outcome data structure
+  // Define the outcome data
   const outcomeData = {
     date: outcomeTimestamp.split('T')[0],
     time: outcomeTimestamp.split('T')[1].split('.')[0], // Time without milliseconds
@@ -153,40 +173,35 @@ function submitOutcome(room, outcomeDocId, testDocId = null, testTimestamp = nul
     outcomeData['totalScore'] = parseInt(leftLegStrength) + parseInt(rightLegStrength);
   }
 
-  // Check if we are updating an existing outcome or creating a new one
-  if (outcomeDocId && outcomeDocId !== 'null') {
-    // Update existing outcome
-    db.collection('outcomes').doc(outcomeDocId).update(outcomeData).then(() => {
-      // ... any additional logic here ...
-      populateOutcomesSection();
-    }).catch((error) => {
-      console.error("Error updating document: ", error);
-    });
-  } else {
-    // Create a new outcome
-    db.collection('outcomes').add(outcomeData).then(() => {
-      if (outcome !== "Not Yet Answered" && outcomeDocId) {
-        db.collection('outcomes').doc(outcomeDocId).delete();
+  // Using a Firestore transaction to handle database operations atomically
+  return db.runTransaction((transaction) => {
+    return transaction.get(db.collection('outcomes').where('room', '==', room).where('date', '==', outcomeData.date)).then((snapshot) => {
+      if (!snapshot.empty) {
+        snapshot.forEach((doc) => {
+          transaction.update(doc.ref, outcomeData);
+        });
+      } else {
+        transaction.set(db.collection('outcomes').doc(), outcomeData);
       }
-      populateOutcomesSection();
-    }).catch((error) => {
-      console.error("Error adding document: ", error);
     });
-  }
+  }).then(() => {
+    console.log("Transaction successfully committed!");
+    populateOutcomesSection();
+  }).catch((error) => {
+    console.error("Transaction failed: ", error);
+  });
 }
+
 
 
 // Updated deleteTest function
 function deleteTest(testDocId, room) {  // Pass room as an argument
   db.collection('tests').doc(testDocId).delete().then(() => {
-    db.collection('outcomes').where('room', '==', room).get().then((querySnapshot) => {
-      querySnapshot.forEach((doc) => {
-        doc.ref.delete();
-      });
-    });
+    // Do not delete outcomes here, just refresh the outcomes section
     populateOutcomesSection();  // Refresh outcomes section
   });
 }
+
 
 
     populateOutcomesSection();
