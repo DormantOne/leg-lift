@@ -97,11 +97,12 @@ function displayTestData(doc) {
 
 
 function displayOutcomeData(doc) {
-  console.log("displayOutcomeData called");  // Debugging line
+  console.log("Modifying DOM to display outcomes");  // Debugging line
   let li = document.createElement('li');
   li.textContent = `Outcome Data: ID: ${doc.id}, Date: ${doc.data().date}, Room: ${doc.data().room}, Outcome: ${doc.data().outcome}`;
   document.getElementById('dataList').appendChild(li);
 }
+
 
 
 function populateOutcomesSection() {
@@ -129,12 +130,18 @@ function populateOutcomesSection() {
     });
   });
 
-  // Attach a new listener for 'outcomes' and store the unsubscribe function
-  outcomesListener = db.collection('outcomes').onSnapshot((querySnapshot) => {
-    querySnapshot.forEach((doc) => {
-      displayOutcomeData(doc);
-    });
+// Attach a new listener for 'outcomes' and store the unsubscribe function
+outcomesListener = db.collection('outcomes').onSnapshot((querySnapshot) => {
+  console.log("Outcomes snapshot received");  // Debugging line
+  if (querySnapshot.empty) {
+    console.log("No outcomes found");  // Debugging line
+  }
+  querySnapshot.forEach((doc) => {
+    console.log("Outcome doc found: ", doc.data());  // Debugging line
+    displayOutcomeData(doc);
   });
+});
+
 }
 
 
