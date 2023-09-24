@@ -25,8 +25,6 @@
       <label><input type="radio" name="rightLeg" value="0"> Cannot bend knee or get heel off bed</label>
     </fieldset>
     <input type="submit" value="Submit">
-      <!-- Add a Clear button -->
-  <button type="button" onclick="clearTestForm()">Clear</button>
   </form>
 
   <!-- Outcome Section -->
@@ -70,22 +68,6 @@
     });
 
 
-function clearTestForm() {
-  // Reset the roomNumber input
-  document.getElementById('roomNumber').value = '';
-
-  // Uncheck all radio buttons for left and right leg strength
-  const leftLegRadios = document.querySelectorAll('input[name="leftLeg"]');
-  const rightLegRadios = document.querySelectorAll('input[name="rightLeg"]');
-  
-  leftLegRadios.forEach((radio) => {
-    radio.checked = false;
-  });
-
-  rightLegRadios.forEach((radio) => {
-    radio.checked = false;
-  });
-}
 
     function displayTestData(doc) {
       let li = document.createElement('li');
@@ -132,16 +114,13 @@ function displayOutcomeData(doc) {
 function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
   console.log("createOutcomeDiv called with outcomeDocId:", outcomeDocId);  // Debugging line
   
-  // Define the Firestore document reference for the test document here
-  const testDocRef = db.collection('tests').doc(testDocId);
-  
   let div = document.createElement('div');
   div.innerHTML = `
     <span>Room: ${room}, Test Date: ${date}</span>
     <input type="radio" name="outcome-${room}" value="Not Yet Answered" checked> Not Yet Answered
     <input type="radio" name="outcome-${room}" value="Walk"> Walk
     <input type="radio" name="outcome-${room}" value="Not Walked"> Not Walked
-    <button onclick="submitOutcome('${room}', '${outcomeDocId}', '${testDocId}')">Submit Outcome</button>  <!-- Pass testDocId -->
+    <button onclick="submitOutcome('${room}', '${outcomeDocId}')">Submit Outcome</button>
     <button onclick="deleteTest('${testDocId}', '${room}')">Delete from Database</button>
   `;
   document.getElementById('outcomesSection').appendChild(div);
@@ -149,44 +128,35 @@ function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
 
 
 
-async function submitOutcome(room, outcomeDocId, testDocRef) {
+function submitOutcome(room, outcomeDocId) {
   console.log("submitOutcome called with outcomeDocId:", outcomeDocId);  // Debugging line
-
+  
   const outcome = document.querySelector(`input[name="outcome-${room}"]:checked`).value;
-
-  try {
-    const testDoc = await testDocRef.get();
-    if (testDoc.exists) {
-      const testId = testDoc.id; // Get the test document ID
-
-      if (outcomeDocId && outcomeDocId !== 'null') {
-        // Update existing outcome
-        await db.collection('outcomes').doc(outcomeDocId).update({
-          date: firebase.firestore.Timestamp.now(),
-          outcome: outcome,
-          testId: testId // Include the test ID in the outcome document
-        });
-
-        if (outcome !== "Not Yet Answered") {
-          await db.collection('outcomes').doc(outcomeDocId).delete();
-        }
-      } else {
-        // Add a new outcome
-        await db.collection('outcomes').add({
-          date: firebase.firestore.Timestamp.now(),
-          room: room,
-          outcome: outcome,
-          testId: testId // Include the test ID in the outcome document
-        });
+  if (outcomeDocId && outcomeDocId !== 'null') {  // Add additional null check
+    db.collection('outcomes').doc(outcomeDocId).update({
+      date: new Date().toISOString().split('T')[0],
+      outcome: outcome
+    }).then(() => {
+      if (outcome !== "Not Yet Answered" && outcomeDocId) {
+        db.collection('outcomes').doc(outcomeDocId).delete();
       }
-
-      // After updating or adding the outcome, refresh the outcomes section
-      await populateOutcomesSection();
-    } else {
-      console.error("Test document not found");
-    }
-  } catch (error) {
-    console.error("Error updating or adding document: ", error);
+      populateOutcomesSection();
+    }).catch((error) => {
+      console.error("Error updating document: ", error);
+    });
+  } else {
+    db.collection('outcomes').add({
+      date: new Date().toISOString().split('T')[0],
+      room: room,
+      outcome: outcome
+    }).then(() => {
+      if (outcome !== "Not Yet Answered") {
+        db.collection('outcomes').doc(outcomeDocId).delete();
+      }
+      populateOutcomesSection();
+    }).catch((error) => {
+      console.error("Error adding document: ", error);
+    });
   }
 }
 
