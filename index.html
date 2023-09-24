@@ -148,14 +148,15 @@ document.getElementById('testForm').addEventListener('submit', function(e) {
     room: roomNumber,
     leftLegStrength: leftLegStrength,
     rightLegStrength: rightLegStrength
-  }).then(() => {
-    populateOutcomesSection();  // Trigger after a new test is added
-  }).then(() => {
-    document.getElementById('testForm').reset();  // Reset the form fields
-  }).catch((error) => {
+  }).then((docRef) => {
+    document.getElementById('testForm').reset();  // Reset the form fields after successful submission
+    console.log("Document written with ID: ", docRef.id);
+  })
+  .catch((error) => {
     console.error("Error adding document: ", error);
   });
 });
+
 
 
 
