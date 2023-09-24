@@ -65,6 +65,8 @@
      }).then(() => {
         populateOutcomesSection();  // Trigger after a new test is added
       });
+      // Reset the form fields
+      e.target.reset();
     });
 
 // Listening for changes in 'outcomes' collection
@@ -137,26 +139,6 @@ function populateOutcomesSection() {
     });
   });
 }
-
-document.getElementById('testForm').addEventListener('submit', function(e) {
-  e.preventDefault();
-  const roomNumber = document.getElementById('roomNumber').value;
-  const leftLegStrength = document.querySelector('input[name="leftLeg"]:checked').value;
-  const rightLegStrength = document.querySelector('input[name="rightLeg"]:checked').value;
-  db.collection('tests').add({
-    date: new Date().toISOString().split('T')[0],
-    room: roomNumber,
-    leftLegStrength: leftLegStrength,
-    rightLegStrength: rightLegStrength
-  }).then((docRef) => {
-    document.getElementById('testForm').reset();  // Reset the form fields after successful submission
-    console.log("Document written with ID: ", docRef.id);
-  })
-  .catch((error) => {
-    console.error("Error adding document: ", error);
-  });
-});
-
 
 
 
