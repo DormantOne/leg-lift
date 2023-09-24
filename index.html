@@ -57,13 +57,17 @@
       const roomNumber = document.getElementById('roomNumber').value;
       const leftLegStrength = document.querySelector('input[name="leftLeg"]:checked').value;
       const rightLegStrength = document.querySelector('input[name="rightLeg"]:checked').value;
+      // Capture Timestamp
+      const testTimestamp = new Date().toISOString();
+      // Add to Firestore
       db.collection('tests').add({
-        date: new Date().toISOString().split('T')[0],
+        date: testTimestamp.split('T')[0],
+        time: testTimestamp.split('T')[1].split('.')[0], // Time without milliseconds
         room: roomNumber,
         leftLegStrength: leftLegStrength,
         rightLegStrength: rightLegStrength
-     }).then(() => {
-        populateOutcomesSection();  // Trigger after a new test is added
+      }).then((docRef) => {
+        populateOutcomesSection(docRef.id, testTimestamp, leftLegStrength, rightLegStrength); // Pass new variables
       });
     });
 
@@ -89,27 +93,27 @@ function displayOutcomeData(doc) {
     });
 
 
-    // Updated populateOutcomesSection
-  function populateOutcomesSection() {
-    document.getElementById('outcomesSection').innerHTML = "<h2>Outcomes</h2>";  // Clear previous entries
-    db.collection('tests').get().then((testSnapshot) => {
-      testSnapshot.forEach((testDoc) => {
-        const room = testDoc.data().room;
-        const date = testDoc.data().date;
-        db.collection('outcomes').where('room', '==', room).get().then((outcomeSnapshot) => {
-          if (outcomeSnapshot.empty) {
-            createOutcomeDiv(room, date, testDoc.id);
-          } else {
-            outcomeSnapshot.forEach((outcomeDoc) => {
-              if (outcomeDoc.data().outcome === "Not Yet Answered") {
-                createOutcomeDiv(room, date, testDoc.id, outcomeDoc.id);
-              }
-            });
-          }
-        });
+function populateOutcomesSection(testDocId = null, testTimestamp = null, leftLegStrength = null, rightLegStrength = null) {
+  document.getElementById('outcomesSection').innerHTML = "<h2>Outcomes</h2>";  // Clear previous entries
+  db.collection('tests').get().then((testSnapshot) => {
+    testSnapshot.forEach((testDoc) => {
+      const room = testDoc.data().room;
+      const date = testDoc.data().date;
+      db.collection('outcomes').where('room', '==', room).get().then((outcomeSnapshot) => {
+        if (outcomeSnapshot.empty) {
+          createOutcomeDiv(room, date, testDoc.id, null, testTimestamp, leftLegStrength, rightLegStrength);  // Pass new variables
+        } else {
+          outcomeSnapshot.forEach((outcomeDoc) => {
+            if (outcomeDoc.data().outcome === "Not Yet Answered") {
+              createOutcomeDiv(room, date, testDoc.id, outcomeDoc.id, testTimestamp, leftLegStrength, rightLegStrength);  // Pass new variables
+            }
+          });
+        }
       });
     });
-  }
+  });
+}
+
 
 function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
   console.log("createOutcomeDiv called with outcomeDocId:", outcomeDocId);  // Debugging line
@@ -121,36 +125,47 @@ function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
     <input type="radio" name="outcome-${room}" value="Walk"> Walk
     <input type="radio" name="outcome-${room}" value="Not Walked"> Not Walked
     <button onclick="submitOutcome('${room}', '${outcomeDocId}')">Submit Outcome</button>
-    <button onclick="deleteTest('${testDocId}', '${room}')">Delete from Database</button>
-  `;
+    <button onclick="submitOutcome('${room}', '${outcomeDocId}', '${testDocId}', '${testTimestamp}', ${leftLegStrength}, ${rightLegStrength})">Submit Outcome</button>
+   `;
   document.getElementById('outcomesSection').appendChild(div);
 }
 
 
 
-function submitOutcome(room, outcomeDocId) {
+function submitOutcome(room, outcomeDocId, testDocId = null, testTimestamp = null, leftLegStrength = null, rightLegStrength = null) {
   console.log("submitOutcome called with outcomeDocId:", outcomeDocId);  // Debugging line
   
+  const outcomeTimestamp = new Date().toISOString();
   const outcome = document.querySelector(`input[name="outcome-${room}"]:checked`).value;
-  if (outcomeDocId && outcomeDocId !== 'null') {  // Add additional null check
-    db.collection('outcomes').doc(outcomeDocId).update({
-      date: new Date().toISOString().split('T')[0],
-      outcome: outcome
-    }).then(() => {
-      if (outcome !== "Not Yet Answered" && outcomeDocId) {
-        db.collection('outcomes').doc(outcomeDocId).delete();
-      }
+
+  // Common outcome data structure
+  const outcomeData = {
+    date: outcomeTimestamp.split('T')[0],
+    time: outcomeTimestamp.split('T')[1].split('.')[0], // Time without milliseconds
+    room: room,
+    outcome: outcome
+  };
+
+  // If extra test data is available, add it to the outcome data
+  if (testDocId && testTimestamp && leftLegStrength && rightLegStrength) {
+    outcomeData['testId'] = testDocId;
+    outcomeData['testTimestamp'] = testTimestamp;
+    outcomeData['totalScore'] = parseInt(leftLegStrength) + parseInt(rightLegStrength);
+  }
+
+  // Check if we are updating an existing outcome or creating a new one
+  if (outcomeDocId && outcomeDocId !== 'null') {
+    // Update existing outcome
+    db.collection('outcomes').doc(outcomeDocId).update(outcomeData).then(() => {
+      // ... any additional logic here ...
       populateOutcomesSection();
     }).catch((error) => {
       console.error("Error updating document: ", error);
     });
   } else {
-    db.collection('outcomes').add({
-      date: new Date().toISOString().split('T')[0],
-      room: room,
-      outcome: outcome
-    }).then(() => {
-      if (outcome !== "Not Yet Answered") {
+    // Create a new outcome
+    db.collection('outcomes').add(outcomeData).then(() => {
+      if (outcome !== "Not Yet Answered" && outcomeDocId) {
         db.collection('outcomes').doc(outcomeDocId).delete();
       }
       populateOutcomesSection();
@@ -159,6 +174,7 @@ function submitOutcome(room, outcomeDocId) {
     });
   }
 }
+
 
 // Updated deleteTest function
 function deleteTest(testDocId, room) {  // Pass room as an argument
