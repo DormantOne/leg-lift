@@ -55,6 +55,31 @@
     let outcomesListener = null;
 let testsListener = null;  // Add this
 
+     // ★ Initialize once when the page loads
+    function init() {
+      // ★ Attach listeners here
+      db.collection('tests').onSnapshot((testSnapshot) => {
+        // Clear previous entries
+        document.getElementById('dataList').innerHTML = '';
+        testSnapshot.forEach((testDoc) => {
+          displayTestData(testDoc);
+        });
+      });
+
+      // ★ Attach new listener for 'outcomes' 
+      db.collection('outcomes').onSnapshot((querySnapshot) => {
+        // Clear previous entries in outcomes section
+        document.getElementById('outcomesSection').innerHTML = '<h2>Outcomes</h2>';
+        querySnapshot.forEach((doc) => {
+          createOutcomeDiv(doc.data().room, doc.data().date, doc.data().testId, doc.id);
+        });
+      });
+    }
+
+    // ★ Call this function when the page loads
+    window.addEventListener('load', (event) => {
+      init();
+    });
     
     document.getElementById('testForm').addEventListener('submit', function(e) {
       e.preventDefault();
@@ -128,45 +153,6 @@ function displayOutcomeData(doc) {
 
 
 
-function populateOutcomesSection() {
-  // Detach the previous listener for 'tests' if it exists
-  console.log("populateOutcomesSection called");  // Debugging line
-  if (testsListener) {
-    testsListener();
-    testsListener = null;
-  }
-
-  // Detach the previous listener for 'outcomes' if it exists
-  if (outcomesListener) {
-    outcomesListener();
-    outcomesListener = null;
-  }
-
-  // Clear previous entries
-  document.getElementById('outcomesSection').innerHTML = "<h2>Outcomes</h2>";  
-  document.getElementById('dataList').innerHTML = '';
-
-  // Attach a new listener for 'tests' and store the unsubscribe function
-  testsListener = db.collection('tests').onSnapshot((testSnapshot) => {
-    testSnapshot.forEach((testDoc) => {
-      displayTestData(testDoc);
-    });
-  });
-
-// Attach a new listener for 'outcomes' and store the unsubscribe function
-outcomesListener = db.collection('outcomes').onSnapshot((querySnapshot) => {
-  console.log("Outcomes snapshot received");  // Debugging line
-  if (querySnapshot.empty) {
-    console.log("No outcomes found");  // Debugging line
-  }
-  querySnapshot.forEach((doc) => {
-    console.log("Outcome doc found: ", doc.data());  // Debugging line
-    displayOutcomeData(doc);
-  });
-});
-
-}
-
 
 
 function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
@@ -184,8 +170,6 @@ function createOutcomeDiv(room, date, testDocId, outcomeDocId = null) {
   document.getElementById('outcomesSection').appendChild(div);
 }
 
-
-
 // Updated Submit Outcome Function
 function submitOutcome(room, outcomeDocId, testDocId) {  // Add 'testDocId' as a new parameter
   const outcome = document.querySelector(`input[name="outcome-${room}"]:checked`).value;
@@ -195,10 +179,11 @@ function submitOutcome(room, outcomeDocId, testDocId) {  // Add 'testDocId' as a
       outcome: outcome,
       testId: testDocId  // Add this line
     }).then(() => {
-      if (outcome !== "Not Yet Answered" && outcomeDocId) {
+      // Only delete the outcome if it's reset to "Not Yet Answered"
+      if (outcome === "Not Yet Answered") {
         db.collection('outcomes').doc(outcomeDocId).delete();
       }
-      populateOutcomesSection();
+      populateOutcomesSection();  // This line can be removed if you are using listeners
     }).catch((error) => {
       console.error("Error updating document: ", error);
     });
@@ -209,10 +194,7 @@ function submitOutcome(room, outcomeDocId, testDocId) {  // Add 'testDocId' as a
       outcome: outcome,
       testId: testDocId  // Add this line
     }).then(() => {
-      if (outcome !== "Not Yet Answered") {
-        // Removed the delete call from here
-      }
-      populateOutcomesSection();
+      populateOutcomesSection();  // This line can be removed if you are using listeners
     }).catch((error) => {
       console.error("Error adding document: ", error);
     });
@@ -233,7 +215,7 @@ function deleteTest(testDocId, room) {  // Pass room as an argument
 }
 
 
-    populateOutcomesSection();
+  
 
   </script>
 </body>
