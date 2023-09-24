@@ -79,19 +79,42 @@ let testsListener = null;  // Add this
 function displayTestData(doc) {
   let li = document.createElement('li');
   const room = doc.data().room;
+  const date = doc.data().date;
+  const testDocId = doc.id;  // Assume doc.id contains the document ID of the test
 
   // Fetch the associated outcome based on the room
   db.collection('outcomes').where('room', '==', room).get().then((outcomeSnapshot) => {
     let outcomeText = 'Not Yet Answered'; // Default value if no outcome is found
-    outcomeSnapshot.forEach((outcomeDoc) => {
-      outcomeText = outcomeDoc.data().outcome;
-    });
+    let outcomeDocId = null;  // To store the document ID of the outcome
+
+    if (!outcomeSnapshot.empty) {
+      outcomeSnapshot.forEach((outcomeDoc) => {
+        outcomeText = outcomeDoc.data().outcome;
+        outcomeDocId = outcomeDoc.id;  // Store the document ID
+      });
+    } else {
+      // If no outcome exists, create a default one
+      db.collection('outcomes').add({
+        date: date,  // You can adjust this
+        room: room,
+        outcome: 'Not Yet Answered',
+        testId: testDocId  // Link it to the test
+      }).then((docRef) => {
+        outcomeDocId = docRef.id;  // Store the newly created document ID
+      }).catch((error) => {
+        console.error("Error adding default outcome: ", error);
+      });
+    }
 
     // Now append the outcome to the list item text
-    li.textContent = `Test Data: Date: ${doc.data().date}, Room: ${room}, Left Leg Strength: ${doc.data().leftLegStrength}, Right Leg Strength: ${doc.data().rightLegStrength}, Outcome: ${outcomeText}`;
+    li.textContent = `Test Data: Date: ${date}, Room: ${room}, Left Leg Strength: ${doc.data().leftLegStrength}, Right Leg Strength: ${doc.data().rightLegStrength}, Outcome: ${outcomeText}`;
     document.getElementById('dataList').appendChild(li);
+
+    // If you want, you can also create UI elements to update the outcome here,
+    // using the outcomeDocId and testDocId
   });
 }
+
 
 
 
